@@ -1,0 +1,51 @@
+directory: /home/portnov/buildd/popcon-server
+
+# phases: [prepare, build, clean, coverage, test, deploy]
+
+hosts:
+  lenny-vm:
+    host: lenny32
+    type: vm
+    empty: true
+    template: template.xml
+    name: lenny32
+    memory: 512M
+    storage-size: 10G
+    cdrom-image: /home/portnov/iso/debian-lenny.iso
+    path: /home/portnov/popcon-server/
+
+  iportnov.ru:
+    # type: host
+    host: iportnov.ru
+    path: /home/portnov/popcon-server/
+
+phases:
+  build:
+    where: lenny-vm
+    pre-execute:
+      - cabal update
+    executor: cabal
+
+  test:
+    where: lenny-vm
+    executor: make
+    parser:   quickcheck
+
+  clean:
+    where: lenny-vm
+    executor: make
+
+  deploy:
+    where: iportnov.ru
+
+    executor: deploy
+
+    files:
+      source:
+        - /home/portnov/configs/popcon-server/
+      build:
+        - ~/.cabal/bin/popcon-server
+
+    shell:
+      - killall popcon-server
+      - "./popcon-server Production &"
