@@ -52,11 +52,11 @@ convertPhase hosts (name, object) = do
   whr <- case lookup whs hosts of
            Nothing -> fail $ "Unknown host: " ++ whs
            Just hc -> return hc
-  preexec <- mapM getString =<< getOptional "pre-execute" [] object
+  preexec <- getOptional "pre-execute" [] object
   executor <- get "executor" object
   parser <- getOptional "parser" executor object
   files <- mapM convertFiles =<< getOptional "files" [] object
-  shell <- mapM getString =<< getOptional "shell" [] object
+  shell <- getOptional "shell" [] object
   return (name, Phase {
                    phWhere = whr,
                    phPreExecute = preexec,

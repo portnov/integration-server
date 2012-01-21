@@ -48,6 +48,10 @@ instance Got String String (Either YamlError) String where
   get k o = getString =<< get k o
   getOptional k d o = getString =<< getOptional k (Scalar d) o
 
+instance Got String String (Either YamlError) [String] where
+  get k o = mapM getString =<< get k o
+  getOptional k d o = mapM getString =<< getOptional k (map Scalar d) o
+
 instance Got String String (Either YamlError) Integer where
   get k o = getInteger =<< get k o
   getOptional k d o = getInteger =<< getOptional k (show d) o
