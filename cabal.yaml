@@ -1,2 +1,4 @@
+actions: [configure, build, install]
+
 $$:
   command: cabal $$

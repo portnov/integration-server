@@ -1,10 +1,14 @@
-
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
 module Types where
+
+import Control.Monad.Error
+import Control.Failure
 
 data ProjectConfig = ProjectConfig {
     pcDirectory :: FilePath,
     pcHosts :: [(String, HostConfig)],
-    pcPhases :: [(String, Phase)] }
+    pcPhases :: [(String, Phase)],
+    pcEnvironment :: [(String, String)] }
   deriving (Eq, Show)
 
 data HostConfig = HostConfig {
@@ -26,7 +30,27 @@ data Phase = Phase {
     phWhere :: HostConfig,
     phPreExecute :: [String],
     phExecutor :: String,
+    phActions :: [String],
     phParser :: String,
     phFiles :: [(String, [FilePath])],
-    phShellCommands :: [String] }
+    phShellCommands :: [String],
+    phEnvironment :: [(String, String)] }
   deriving (Eq, Show)
+
+data Executor = Executor {
+    exActions :: [String],
+    exConfigs :: [(String, ActionConfig)] }
+  deriving (Eq, Show)
+
+data ActionConfig = ActionConfig {
+    acCommand :: String }
+  deriving (Eq, Show)
+
+type YamlError = String
+
+instance Failure e (Either e) where
+  failure e = Left e
+
+instance (Monad m) => Failure YamlError (ErrorT YamlError m) where
+  failure e = fail e
+

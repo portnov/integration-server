@@ -3,28 +3,38 @@
 module ProjectConfig where
 
 import Control.Applicative
+import Control.Monad.Error
+import Control.Monad.Trans
+import Control.Failure
 import Data.Object
 import Data.Object.Yaml
 
 import Types
 import Yaml
 
-loadProjectConfig :: FilePath -> IO (Either YamlError ProjectConfig)
+loadProjectConfig :: FilePath -> ErrorT YamlError IO ProjectConfig
 loadProjectConfig path = do
-  x <- decodeFile path
+  x <- lift $ decodeFile path
   case x of
-    Left err -> fail $ show (err :: ParseException)
-    Right object -> return $ convertProject object
+    Left err -> failure $ show (err :: ParseException)
+    Right object -> ErrorT (return $ convertProject object)
 
 convertProject :: StringObject -> Either YamlError ProjectConfig
 convertProject object = do
   dir <- get "directory" object
   hosts <- mapM convertHost =<< get "hosts" object
   phases <- mapM (convertPhase hosts) =<< get "phases" object
+  env <- mapM convertVar =<< getOptional "environment" [] object
   return $ ProjectConfig {
              pcDirectory = dir,
              pcHosts = hosts,
-             pcPhases = phases }
+             pcPhases = phases,
+             pcEnvironment = env }
+
+convertVar :: (String, StringObject) -> Either YamlError (String, String)
+convertVar (name, object) = do
+  val <- getString object
+  return (name, val)
 
 convertHost :: (String, StringObject) -> Either YamlError (String, HostConfig)
 convertHost (name, object) = do
@@ -54,16 +64,20 @@ convertPhase hosts (name, object) = do
            Just hc -> return hc
   preexec <- getOptional "pre-execute" [] object
   executor <- get "executor" object
+  actions <- getOptional "actions" [] object
   parser <- getOptional "parser" executor object
   files <- mapM convertFiles =<< getOptional "files" [] object
   shell <- getOptional "shell" [] object
+  env <- mapM convertVar =<< getOptional "environment" [] object
   return (name, Phase {
                    phWhere = whr,
                    phPreExecute = preexec,
                    phExecutor = executor,
+                   phActions = actions,
                    phParser = parser,
                    phFiles = files,
-                   phShellCommands = shell } )
+                   phShellCommands = shell,
+                   phEnvironment = env } )
 
 convertFiles :: (String, StringObject) -> Either YamlError (String, [FilePath])
 convertFiles (name, object) = do

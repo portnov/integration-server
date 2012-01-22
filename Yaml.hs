@@ -9,10 +9,7 @@ import Data.Char
 import Data.Object
 import Data.Object.Yaml
 
-instance Failure e (Either e) where
-  failure e = Left e
-
-type YamlError = String
+import Types
 
 suffixes :: [(String, Integer)]
 suffixes = concatMap (\(n, ss) -> [(s, n) | s <- ss]) $
