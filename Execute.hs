@@ -28,7 +28,7 @@ execute path phase = do
       exe <- loadExecutor (phExecutor ph ++ ".yaml")
       let aclist = if null (phActions ph)
                      then if null (exActions exe)
-                            then ["configure", "check", "all", "test", "install"]
+                            then [phase]
                             else exActions exe
                      else phActions ph
       forM_ aclist $ \action -> do

@@ -22,8 +22,7 @@ hosts:
 phases:
   build:
     where: lenny-vm
-    pre-execute:
-      - cabal update
+    actions: [update, configure, build, install]
     executor: cabal
 
   test:
