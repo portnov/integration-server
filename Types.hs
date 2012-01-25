@@ -21,9 +21,7 @@ data VMConfig = VMConfig {
       vmEmpty :: Bool,
       vmTemplatePath :: FilePath,
       vmName :: String,
-      vmMemory :: Integer,
-      vmStorageSize :: Integer,
-      vmCDROMImage :: FilePath }
+      vmParams :: [(String, String)] }
   deriving (Eq, Show)
 
 data Phase = Phase {

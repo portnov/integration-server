@@ -47,9 +47,7 @@ convertHost (name, object) = do
                       <$> get "empty" object
                       <*> get "template" object
                       <*> get "name" object
-                      <*> get "memory" object
-                      <*> get "storage-size" object
-                      <*> get "cdrom-image" object)
+                      <*> getPairs object)
             _ -> fail $ "Unknown host type: " ++ ht
   return (name, HostConfig {
              hcHostname = hostname,

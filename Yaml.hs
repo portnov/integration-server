@@ -88,6 +88,11 @@ instance Got String String (Either YamlError) [(String, StringObject)] where
       Mapping pairs -> return pairs
       _ -> failure $ "Expected mapping, but got: " ++ show x
 
+instance Got String String (Either YamlError) [(String, String)] where
+  get k o = getPairs =<< get k o
+  
+  getOptional k d o = getPairs =<< getOptional k (Mapping [(k, Scalar v) | (k,v) <- d]) o
+
 getSequence :: StringObject -> Either YamlError [StringObject]
 getSequence (Sequence list) = return list
 getSequence (Scalar x) = return [Scalar x]
@@ -159,7 +164,7 @@ loadYaml kind name = do
                  ee <- liftIO $ doesFileExist etcPath
                  if ee
                    then return etcPath
-                   else fail $ "Yaml not found neither in ~ nor /etc: " ++ kind </> yamlName
+                   else failure $ "YAML file not found neither in ~ nor /etc: " ++ kind </> yamlName
   mby <- liftIO (decodeFile path :: IO (Either ParseException StringObject))
   case mby of
     Left err -> failure (show err)
