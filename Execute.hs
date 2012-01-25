@@ -4,27 +4,40 @@ module Execute where
 import Control.Monad
 import Control.Monad.Error
 import Control.Monad.Trans
+import System.FilePath
+import System.FilePath.Glob
+import System.Directory
 
 import Types
 import Yaml
 import ProjectConfig
 import Executor
 
-actionCommand :: String -> [(String, String)] -> Executor -> Either String String
-actionCommand action pairs exe =
+actionCommands :: String -> [(String, String)] -> Executor -> Either String [String]
+actionCommands action pairs exe =
   case lookupAction action exe of
     Nothing -> Left $ "Unknown action in executor: " ++ action
-    Just ac -> eval action pairs (acCommand ac)
+    Just ac -> mapM (eval action pairs) (acCommands ac)
 
 environment :: ProjectConfig -> Phase -> [(String, String)]
-environment pc ph = phEnvironment ph ++ pcEnvironment pc
+environment pc ph = phEnvironment ph ++ params ++ pcEnvironment pc
+  where
+    params = case hcVM (phWhere ph) of
+               Nothing -> []
+               Just vm -> vmParams vm
 
-execute :: FilePath -> String -> ErrorT YamlError IO ()
+execute :: FilePath -> String -> YamlM ()
 execute path phase = do
-  pc <- loadProjectConfig path
+  chosts <- loadCommonHosts
+  pc <- loadProjectConfig path chosts
   case lookup phase (pcPhases pc) of
     Nothing -> lift $ putStrLn $ "No such phase: " ++ phase
     Just ph -> do
+      let host = phWhere ph
+      liftIO $ putStrLn $ "Executing " ++ phase ++ " on " ++ hcHostname host
+      case hcVM host of
+        Nothing -> return ()
+        Just vm -> liftIO $ putStrLn $ "Running VM"
       exe <- loadExecutor (phExecutor ph)
       let aclist = if null (phActions ph)
                      then if null (exActions exe)
@@ -35,7 +48,12 @@ execute path phase = do
         case lookupAction action exe of
           Nothing -> lift $ putStrLn $ "Action is not supported by executor: " ++ action
           Just ac -> when (action /= "$$") $ do
-            case actionCommand action (environment pc ph) exe of
+            case actionCommands action (environment pc ph) exe of
               Left err -> lift $ putStrLn $ "Error in command for action " ++ action ++ ": " ++ err
-              Right cmd -> lift $ putStrLn $ "EXEC: " ++ cmd
+              Right cmds -> forM_ cmds $ \cmd -> 
+                                 lift $ putStrLn $ "EXEC: " ++ cmd
+      case hcVM host of
+        Nothing -> return ()
+        Just vm -> when (phShutdownVM ph) $
+                       liftIO $ putStrLn "Shutting VM down"
 

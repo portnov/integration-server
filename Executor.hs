@@ -29,9 +29,9 @@ convertExecutor object = do
 convertAction :: (String, StringObject) -> Either YamlError [(String, ActionConfig)]
 convertAction ("actions", _) = return []
 convertAction (name, object) = do
-  cmd <- get "command" object
+  cmds <- get "commands" object
   return [(name, ActionConfig {
-                  acCommand = cmd } )]
+                  acCommands = cmds } )]
 
 lookupAction :: String -> Executor -> Maybe ActionConfig
 lookupAction act (Executor _ pairs) =

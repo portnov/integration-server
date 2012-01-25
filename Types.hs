@@ -18,14 +18,17 @@ data HostConfig = HostConfig {
   deriving (Eq, Show)
 
 data VMConfig = VMConfig {
+      vmHypervisor :: String,
       vmEmpty :: Bool,
       vmTemplatePath :: FilePath,
       vmName :: String,
+      vmSnapshot :: String,
       vmParams :: [(String, String)] }
   deriving (Eq, Show)
 
 data Phase = Phase {
     phWhere :: HostConfig,
+    phShutdownVM :: Bool,
     phPreExecute :: [String],
     phExecutor :: String,
     phActions :: [String],
@@ -41,7 +44,7 @@ data Executor = Executor {
   deriving (Eq, Show)
 
 data ActionConfig = ActionConfig {
-    acCommand :: String }
+    acCommands :: [String] }
   deriving (Eq, Show)
 
 type YamlError = String

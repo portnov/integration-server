@@ -15,7 +15,7 @@ hosts:
     name: lenny32
     memory: 512M
     storage-size: 10G
-    cdrom-image: /home/portnov/iso/debian-lenny.iso
+    snapshot: /home/portnov/vms/lenny32.snapshot
     path: /home/portnov/popcon-server/
 
   iportnov.ru:
