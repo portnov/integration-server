@@ -57,3 +57,10 @@ instance Failure e (Either e) where
 instance (Monad m) => Failure YamlError (ErrorT YamlError m) where
   failure e = fail e
 
+class RemoteProtocol p where
+  connectRemote :: String -> IO p
+  disconnectRemote :: p -> IO ()
+  runCommand :: p -> String -> IO (Int, String)
+  readRemoteFile :: p -> FilePath -> IO String
+  writeRemoteFile :: p -> FilePath -> String -> IO ()
+
