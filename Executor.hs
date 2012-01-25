@@ -47,14 +47,14 @@ data SItem = ACTION | VAR String | LITERAL String
 parseString :: String -> Either String [SItem]
 parseString str = reverse <$> go False "" [] str
   where
-    go False _ acc [] = return acc
-    go True  v acc [] = Left $ "No ending '}' ? : " ++ v
-    go False _ acc ('$':'$':s) = go False "" (ACTION:acc) s
-    go False _ acc ('$':'{':s) = go True "" acc s
-    go True  v acc ('}':s) = go False "" (VAR v:acc) s
-    go True  v acc (c:s) = go True (v ++ [c]) acc s
+    go False _ acc []                = return acc
+    go True  v acc []                = Left $ "No ending '}' ? : " ++ v
+    go False _ acc ('$':'$':s)       = go False "" (ACTION:acc) s
+    go False _ acc ('$':'{':s)       = go True  "" acc          s
+    go True  v acc ('}':s)           = go False "" (VAR v:acc)  s
+    go True  v acc (c:s)             = go True  (v ++ [c]) acc  s
     go False _ (LITERAL o:acc) (c:s) = go False "" (LITERAL (o ++ [c]):acc) s
-    go False _ acc (c:s) = go False "" (LITERAL [c]:acc) s
+    go False _ acc (c:s)             = go False "" (LITERAL [c]:acc) s
 
 eval :: String -> [(String, String)] -> String -> Either String String
 eval action pairs str = concatMap go <$> parseString str

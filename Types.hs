@@ -48,6 +48,8 @@ data ActionConfig = ActionConfig {
 
 type YamlError = String
 
+type YamlM a = ErrorT YamlError IO a
+
 instance Failure e (Either e) where
   failure e = Left e
 

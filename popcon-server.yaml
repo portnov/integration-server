@@ -1,4 +1,8 @@
+title: Popularity-contest server
+
 directory: /home/portnov/buildd/popcon-server
+
+inherit: cabal-project
 
 # phases: [prepare, build, clean, coverage, test, deploy]
 
@@ -22,22 +26,15 @@ hosts:
 phases:
   build:
     where: lenny-vm
-    actions: [update, configure, build, install]
-    executor: cabal
 
   test:
     where: lenny-vm
-    executor: make
-    parser:   quickcheck
 
   clean:
     where: lenny-vm
-    executor: make
 
   deploy:
     where: iportnov.ru
-
-    executor: deploy
 
     files:
       source:

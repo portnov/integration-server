@@ -1,0 +1,17 @@
+title: Template for projects builded with Cabal
+
+phases:
+  build:
+    actions: [update, configure, build, install]
+    executor: cabal
+
+  test:
+    executor: make
+    parser:   quickcheck
+
+  clean:
+    executor: make
+
+  deploy:
+    executor: deploy
+

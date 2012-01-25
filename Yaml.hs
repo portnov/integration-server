@@ -3,11 +3,16 @@ module Yaml where
 
 import Control.Applicative
 import Control.Monad
+import Control.Monad.Trans
 import Control.Monad.Instances
 import Control.Failure
 import Data.Char
+import Data.List
 import Data.Object
 import Data.Object.Yaml
+import System.FilePath
+import System.Directory
+import System.Environment
 
 import Types
 
@@ -104,4 +109,64 @@ getInteger s =
         else case lookup (map toLower suf) suffixes of
                Nothing -> failure $ "Unknown suffix: " ++ suf
                Just c  -> return $ read ds * c
+
+getPairs :: StringObject -> Either YamlError [(String, String)]
+getPairs object = concatMap go <$> getMapping object
+  where
+    go (name, Scalar val) = [(name, val)]
+    go (_,_) = []
+
+getInherit :: StringObject -> Either YamlError (Maybe String, StringObject)
+getInherit x@(Mapping ps) = case lookupRemove "inherit" ps of
+                              (Nothing, _) -> Right (Nothing, x)
+                              (Just (Scalar y), s) -> Right (Just y, Mapping s)
+                              (Just y, _) -> Left $ "Inherit: should be Scalar, but got " ++ show y
+getInherit x            = Right (Nothing, x)
+
+merge :: StringObject -> StringObject -> StringObject
+merge (Mapping ps1) (Mapping ps2) = Mapping $ mergeMap ps1 ps2
+merge (Sequence _)  (Sequence ls) = Sequence ls
+merge (Scalar _)    (Scalar v)    = Scalar v
+merge _             y             = y
+
+mergeMap :: [(String, StringObject)] -> [(String, StringObject)] -> [(String, StringObject)]
+mergeMap ps [] = ps
+mergeMap ps ((k,v):other) =
+  case lookupRemove k ps of
+    (Nothing,s) -> (k,v): mergeMap s other
+    (Just u, s) -> (k, merge u v): mergeMap s other
+
+lookupRemove :: (Eq k) => k -> [(k,v)] -> (Maybe v, [(k,v)])
+lookupRemove k pairs = go [] k pairs
+  where
+    go acc _ [] = (Nothing, acc)
+    go acc k ((k', v): other)
+      | k == k' = (Just v, acc ++ other)
+      | otherwise = go (acc ++ [(k',v)]) k other
+
+loadYaml :: String -> String -> YamlM StringObject
+loadYaml kind name = do
+  let yamlName = if ".yaml" `isSuffixOf` name
+                   then name
+                   else name ++ ".yaml"
+  home <- liftIO $ getEnv "HOME"
+  let homePath = home </> ".config" </> "this" </> kind </> yamlName
+      etcPath  = "/etc/this" </> kind </> yamlName
+  he <- liftIO $ doesFileExist homePath
+  path <- if he
+            then return homePath
+            else do
+                 ee <- liftIO $ doesFileExist etcPath
+                 if ee
+                   then return etcPath
+                   else fail $ "Yaml not found neither in ~ nor /etc: " ++ kind </> yamlName
+  mby <- liftIO (decodeFile path :: IO (Either ParseException StringObject))
+  case mby of
+    Left err -> failure (show err)
+    Right yaml -> case getInherit yaml of
+                    Left err -> failure err
+                    Right (Just p, yaml') -> do
+                        parent <- loadYaml kind p
+                        return $ merge parent yaml'
+                    Right (Nothing, _) -> return yaml
 
