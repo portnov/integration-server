@@ -25,7 +25,7 @@ execute path phase = do
   case lookup phase (pcPhases pc) of
     Nothing -> lift $ putStrLn $ "No such phase: " ++ phase
     Just ph -> do
-      exe <- loadExecutor (phExecutor ph ++ ".yaml")
+      exe <- loadExecutor (phExecutor ph)
       let aclist = if null (phActions ph)
                      then if null (exActions exe)
                             then [phase]
@@ -34,9 +34,8 @@ execute path phase = do
       forM_ aclist $ \action -> do
         case lookupAction action exe of
           Nothing -> lift $ putStrLn $ "Action is not supported by executor: " ++ action
-          Just ac -> do
-            when (action /= "$$") $ do
-              case actionCommand action (environment pc ph) exe of
-                Left err -> lift $ putStrLn $ "Error in command for action " ++ action ++ ": " ++ err
-                Right cmd -> lift $ putStrLn $ "EXEC: " ++ cmd
+          Just ac -> when (action /= "$$") $ do
+            case actionCommand action (environment pc ph) exe of
+              Left err -> lift $ putStrLn $ "Error in command for action " ++ action ++ ": " ++ err
+              Right cmd -> lift $ putStrLn $ "EXEC: " ++ cmd
 

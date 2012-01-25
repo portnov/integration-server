@@ -13,12 +13,10 @@ import Text.Printf
 import Types
 import Yaml
 
-loadExecutor :: FilePath -> ErrorT YamlError IO Executor
-loadExecutor path = do
-  x <- lift $ decodeFile path
-  case x of
-    Left err -> failure $ show (err :: ParseException)
-    Right object -> ErrorT (return $ convertExecutor object)
+loadExecutor :: FilePath -> YamlM Executor
+loadExecutor name = do
+  object <- loadYaml "executors" name
+  ErrorT (return $ convertExecutor object)
 
 convertExecutor :: StringObject -> Either YamlError Executor
 convertExecutor object = do

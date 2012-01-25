@@ -12,19 +12,17 @@ import Data.Object.Yaml
 import Types
 import Yaml
 
-loadProjectConfig :: FilePath -> ErrorT YamlError IO ProjectConfig
-loadProjectConfig path = do
-  x <- lift $ decodeFile path
-  case x of
-    Left err -> failure $ show (err :: ParseException)
-    Right object -> ErrorT (return $ convertProject object)
+loadProjectConfig :: String -> YamlM ProjectConfig
+loadProjectConfig name = do
+  object <- loadYaml "projects" name
+  ErrorT (return $ convertProject object)
 
 convertProject :: StringObject -> Either YamlError ProjectConfig
 convertProject object = do
   dir <- get "directory" object
   hosts <- mapM convertHost =<< get "hosts" object
   phases <- mapM (convertPhase hosts) =<< get "phases" object
-  env <- mapM convertVar =<< getOptional "environment" [] object
+  env <- getPairs object
   return $ ProjectConfig {
              pcDirectory = dir,
              pcHosts = hosts,
@@ -66,7 +64,7 @@ convertPhase hosts (name, object) = do
   parser <- getOptional "parser" executor object
   files <- mapM convertFiles =<< getOptional "files" [] object
   shell <- getOptional "shell" [] object
-  env <- mapM convertVar =<< getOptional "environment" [] object
+  env <- getPairs object
   return (name, Phase {
                    phWhere = whr,
                    phPreExecute = preexec,

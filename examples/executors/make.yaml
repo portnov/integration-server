@@ -1,0 +1,5 @@
+configure:
+  commands: ./configure ${FLAGS}
+
+$$:
+  commands: make $$
