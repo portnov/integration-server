@@ -45,3 +45,7 @@ phases:
     shell:
       - killall popcon-server
       - "./popcon-server Production &"
+
+  shutdown:
+    where: lenny-vm
+    shutdown: yes

@@ -4,14 +4,22 @@ phases:
   build:
     actions: [update, configure, build, install]
     executor: cabal
+    shutdown: no
 
   test:
     executor: make
     parser:   quickcheck
+    shutdown: no
 
   clean:
     executor: make
+    shutdown: no
 
   deploy:
     executor: deploy
+    shutdown: no
+
+  shutdown:
+    executor: null
+    shutdown: yes
 
