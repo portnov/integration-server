@@ -12,6 +12,7 @@ import THIS.Types
 import THIS.Yaml
 import THIS.Config.ProjectConfig
 import THIS.Config.Executor
+import THIS.ConnectionsManager
 
 actionCommands :: String -> [(String, String)] -> Executor -> Either String [String]
 actionCommands action pairs exe =

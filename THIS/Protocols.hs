@@ -3,6 +3,7 @@ module THIS.Protocols where
 import Control.Applicative
 import Data.Object
 import Data.Object.Yaml
+import Data.Maybe
 
 import THIS.Types
 import THIS.Yaml
@@ -11,14 +12,23 @@ import THIS.Protocols.Parse
 import THIS.Protocols.LibSSH2
 import THIS.Protocols.SSHCommands
 
-loadConnectionInfo :: StringObject -> Either YamlError ConnectionInfo
-loadConnectionInfo object = ConnectionInfo
-    <$> get "host" object
-    <*> getOptional "port" 22 object
-    <*> getOptional "login" "this" object
-    <*> getOptional "known-hosts" kh object
-    <*> getOptional "public-key" pub object
-    <*> getOptional "private-key" priv object
+lookupDefault :: String -> String -> [(String, String)] -> String
+lookupDefault key def pairs = fromMaybe def $ lookup key pairs
+
+lookupForce :: String -> [(String, String)] -> Either YamlError String
+lookupForce key pairs =
+  case lookup key pairs of
+    Nothing -> Left $ "Key not found: " ++ key
+    Just v  -> Right v
+
+loadConnectionInfo :: [(String, String)] -> Either YamlError ConnectionInfo
+loadConnectionInfo pairs = ConnectionInfo
+    <$> lookupForce "host" pairs
+    <*> (readInt $ lookupDefault "port" "22" pairs)
+    <*> (Right $ lookupDefault "login" "this" pairs)
+    <*> (Right $ lookupDefault "known-hosts" kh pairs)
+    <*> (Right $ lookupDefault "public-key" pub pairs)
+    <*> (Right $ lookupDefault "private-key" priv pairs)
   where
     kh   = "/etc/this/ssh/known_hosts"
     pub  = "/etc/this/ssh/id_rsa.pub"
@@ -33,6 +43,9 @@ deinitializeProtocols :: IO ()
 deinitializeProtocols = do
   deinitializeProtocol (LibSSH2 undefined)
   deinitializeProtocol (SSHCommands undefined)
+
+disconnectA :: AnyProtocol -> IO ()
+disconnectA (AnyProtocol p) = disconnect p
 
 runCommandA :: AnyCommandProtocol -> String -> IO (Int, String)
 runCommandA (AnyCommandProtocol p) command =
