@@ -88,12 +88,12 @@ instance SendProtocol LibSSH2 where
       then fail $ "Cannot make remote dir " ++ path ++ ", error " ++ show rc
       else return ()
 
-  sendTree _ _ _ = fail "Not implemented"
+  sendTree _ _ _ = fail "sendTree: Not implemented"
     
 instance ReceiveProtocol LibSSH2 where
   receiveFile (LibSSH2 session) remote local = do
     sz <- scpReceiveFile session remote local
     return ()
 
-  receiveTree _ _ _ = fail "Not implemented"
+  receiveTree _ _ _ = fail "receiveTree: Not implemented"
 
