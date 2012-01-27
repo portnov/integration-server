@@ -71,6 +71,16 @@ readBool s = do
            then return False
            else failure $ "Cannot parse as boolean value: " ++ s
 
+instance Got String String (Either YamlError) Int where
+  get k o = readInt =<< get k o
+  getOptional k d o = readInt =<< getOptional k (show d) o
+
+readInt :: String -> Either YamlError Int
+readInt s =
+  case reads s of
+    [(n, "")] -> return n
+    _ -> failure $ "Cannot parse int: " ++ s
+
 instance Got String String (Either YamlError) [StringObject] where
   get k o = getSequence =<< get k o
   getOptional k d o = getSequence =<< getOptional k (Sequence d) o
