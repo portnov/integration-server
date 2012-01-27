@@ -1,20 +1,43 @@
 {-# LANGUAGE TypeFamilies, ExistentialQuantification #-}
 module THIS.Protocols where
 
+import Control.Applicative
 import Data.Object
 import Data.Object.Yaml
 
 import THIS.Types
+import THIS.Yaml
+
+data ConnectionInfo = ConnectionInfo {
+  cHost :: String,
+  cPort :: Int,
+  cUsername :: String,
+  cKnownHosts :: FilePath,
+  cPublicKey :: FilePath,
+  cPrivateKey :: FilePath }
+  deriving (Eq)
+
+instance Show ConnectionInfo where
+  show cfg = cUsername cfg ++ "@" ++ cHost cfg ++ ":" ++ show (cPort cfg)
+
+loadConnectionInfo :: StringObject -> Either YamlError ConnectionInfo
+loadConnectionInfo object = ConnectionInfo
+    <$> get "host" object
+    <*> getOptional "port" 22 object
+    <*> getOptional "login" "this" object
+    <*> getOptional "known-hosts" kh object
+    <*> getOptional "public-key" pub object
+    <*> getOptional "private-key" priv object
+  where
+    kh   = "/etc/this/ssh/known_hosts"
+    pub  = "/etc/this/ssh/id_rsa.pub"
+    priv = "/etc/this/ssh/id_rsa"
 
 class Protocol p where
-  type ConnectionInfo p
-
-  loadConnectionInfo :: StringObject -> Either YamlError (ConnectionInfo p)
-
   initializeProtocol :: p -> IO ()
   deinitializeProtocol :: p -> IO ()
 
-  connect :: ConnectionInfo p -> IO p
+  connect :: ConnectionInfo -> IO p
   disconnect :: p -> IO ()
 
 data AnyProtocol = forall p. Protocol p => AnyProtocol p

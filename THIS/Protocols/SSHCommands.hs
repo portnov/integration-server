@@ -10,25 +10,9 @@ import THIS.Types
 import THIS.Yaml
 import THIS.Protocols
 
-data SSHCommands = SSHCommands SSHCommandsConnection
-
-data SSHCommandsConnection = SSHCommandsConnection {
-  cHost :: String,
-  cPort :: Int,
-  cUsername :: String }
-  deriving (Eq)
-
-instance Show SSHCommandsConnection where
-  show cfg = cUsername cfg ++ "@" ++ cHost cfg ++ ":" ++ show (cPort cfg)
+data SSHCommands = SSHCommands ConnectionInfo
 
 instance Protocol SSHCommands where
-  type ConnectionInfo SSHCommands = SSHCommandsConnection
-
-  loadConnectionInfo object = SSHCommandsConnection
-      <$> get "host" object
-      <*> getOptional "port" 22 object
-      <*> getOptional "login" "this" object
-
   initializeProtocol _ = return ()
   deinitializeProtocol _ = return ()
 
@@ -39,7 +23,7 @@ rc2int :: ExitCode -> Int
 rc2int ExitSuccess = 0
 rc2int (ExitFailure n) = n
 
-runSSH :: SSHCommandsConnection -> [String] -> IO (Int, String)
+runSSH :: ConnectionInfo -> [String] -> IO (Int, String)
 runSSH cfg params = do
     (ec, out, _) <- readProcessWithExitCode "ssh"
                        (show cfg: params)

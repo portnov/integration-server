@@ -16,30 +16,7 @@ import THIS.Protocols
 
 data LibSSH2 = LibSSH2 Session
 
-data LibSSH2Connection = LibSSH2Connection {
-  cHost :: String,
-  cPort :: Int,
-  cUsername :: String,
-  cKnownHosts :: FilePath,
-  cPublicKey :: FilePath,
-  cPrivateKey :: FilePath }
-  deriving (Eq, Show)
-
 instance Protocol LibSSH2 where
-  type ConnectionInfo LibSSH2 = LibSSH2Connection
-
-  loadConnectionInfo object = LibSSH2Connection 
-      <$> get "host" object
-      <*> getOptional "port" 22 object
-      <*> getOptional "login" "this" object
-      <*> getOptional "known-hosts" kh object
-      <*> getOptional "public-key" pub object
-      <*> getOptional "private-key" priv object
-    where
-      kh   = "/etc/this/ssh/known_hosts"
-      pub  = "/etc/this/ssh/id_rsa.pub"
-      priv = "/etc/this/ssh/id_rsa"
-
   initializeProtocol _ = do
       initialize True
       return ()
