@@ -37,3 +37,24 @@ deinitializeProtocols = do
 runCommandA :: AnyCommandProtocol -> String -> IO (Int, String)
 runCommandA (AnyCommandProtocol p) command =
   runCommand p command
+
+sendFileA :: AnySendProtocol -> FilePath -> FilePath -> IO ()
+sendFileA (AnySendProtocol p) local remote =
+  sendFile p local remote
+
+makeRemoteDirectoryA :: AnySendProtocol -> FilePath -> IO ()
+makeRemoteDirectoryA (AnySendProtocol p) path =
+  makeRemoteDirectory p path
+
+sendTreeA :: AnySendProtocol -> FilePath -> FilePath -> IO ()
+sendTreeA (AnySendProtocol p) local remote =
+  sendTree p local remote
+
+receiveFileA :: AnyReceiveProtocol -> FilePath -> FilePath -> IO ()
+receiveFileA (AnyReceiveProtocol p) remote local =
+  receiveFile p remote local
+
+receiveTreeA :: AnyReceiveProtocol -> FilePath -> FilePath -> IO ()
+receiveTreeA (AnyReceiveProtocol p) remote local =
+  receiveTree p remote local
+
