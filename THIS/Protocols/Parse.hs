@@ -6,7 +6,7 @@ import Data.Object.Yaml
 
 import THIS.Types
 import THIS.Yaml
-import THIS.Protocols
+import THIS.Protocols.Types
 import THIS.Protocols.LibSSH2
 import THIS.Protocols.SSHCommands
 

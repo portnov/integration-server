@@ -12,7 +12,7 @@ import Network.SSH.Client.LibSSH2
 
 import THIS.Types
 import THIS.Yaml
-import THIS.Protocols
+import THIS.Protocols.Types
 
 data LibSSH2 = LibSSH2 Session
 

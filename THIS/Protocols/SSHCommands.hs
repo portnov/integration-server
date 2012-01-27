@@ -8,7 +8,7 @@ import Text.Printf
 
 import THIS.Types
 import THIS.Yaml
-import THIS.Protocols
+import THIS.Protocols.Types
 
 data SSHCommands = SSHCommands ConnectionInfo
 
