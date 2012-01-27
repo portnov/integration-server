@@ -46,7 +46,8 @@ convertProject commonHosts object = do
   let this = HostConfig {
                hcHostname = "localhost",
                hcPath     = dir,
-               hcVM       = Nothing }
+               hcVM       = Nothing,
+               hcParams   = [("host", "localhost")] }
   hosts <- mapM convertHost =<< get "hosts" object
   let allHosts = [("this", this)] ++ commonHosts ++ hosts
   phases <- mapM (convertPhase allHosts) =<< get "phases" object
@@ -74,13 +75,14 @@ convertHost (name, object) = do
                       <*> get "empty" object
                       <*> get "template" object
                       <*> get "name" object
-                      <*> getOptional "snapshot" "" object
-                      <*> getPairs object)
+                      <*> getOptional "snapshot" "" object)
             _ -> failure $ "Unknown host type: " ++ ht
+  params <- getPairs object
   return (name, HostConfig {
              hcHostname = hostname,
              hcPath = path,
-             hcVM = mbvm } )
+             hcVM = mbvm,
+             hcParams = params } )
 
 convertPhase :: [(String, HostConfig)] -> (String, StringObject) -> Either YamlError (String, Phase)
 convertPhase hosts (name, object) = do

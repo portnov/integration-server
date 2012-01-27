@@ -1,0 +1,17 @@
+title: Test project
+
+directory: /home/portnov/src/integration-server/test/
+
+hosts:
+  local:
+    host: localhost
+    path: /home/portnov/temp/test/
+    known-hosts: /home/portnov/.ssh/known_hosts
+    public-key:  /home/portnov/.ssh/id_rsa.pub
+    private-key: /home/portnov/.ssh/id_rsa
+
+phases:
+  build:
+    where: local
+    actions: [all, clean]
+    executor: make

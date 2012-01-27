@@ -6,6 +6,7 @@ import Network
 import Network.Socket hiding (connect)
 import System.IO
 import Codec.Binary.UTF8.String
+import Text.Printf
 
 import Network.SSH.Client.LibSSH2.Foreign
 import Network.SSH.Client.LibSSH2
@@ -28,15 +29,26 @@ instance Protocol LibSSH2 where
     handle <- socketToHandle sock ReadWriteMode
     session <- initSession
     handshake session sock
+    putStrLn "handshake done"
+    putStrLn $ printf "checkHost %s %s %s"
+        (cHost cfg)
+        (show $ cPort cfg)
+        (cKnownHosts cfg)
     checkHost session
         (cHost cfg)
         (cPort cfg)
         (cKnownHosts cfg)
+    putStrLn "CheckHost done"
+    putStrLn $ printf "Auth: %s %s %s"
+        (cUsername cfg)
+        (cPublicKey cfg)
+        (cPrivateKey cfg)
     publicKeyAuthFile session
         (cUsername cfg)
         (cPublicKey cfg)
         (cPrivateKey cfg)
         ""
+    putStrLn "Auth done"
     return (LibSSH2 session)
 
   disconnect (LibSSH2 session) = do

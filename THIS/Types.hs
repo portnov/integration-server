@@ -14,7 +14,8 @@ data ProjectConfig = ProjectConfig {
 data HostConfig = HostConfig {
      hcHostname :: String,
      hcPath :: FilePath,
-     hcVM :: Maybe VMConfig }
+     hcVM :: Maybe VMConfig,
+     hcParams :: [(String, String)] }
   deriving (Eq, Show)
 
 data VMConfig = VMConfig {
@@ -22,8 +23,7 @@ data VMConfig = VMConfig {
       vmEmpty :: Bool,
       vmTemplatePath :: FilePath,
       vmName :: String,
-      vmSnapshot :: String,
-      vmParams :: [(String, String)] }
+      vmSnapshot :: String }
   deriving (Eq, Show)
 
 data Phase = Phase {

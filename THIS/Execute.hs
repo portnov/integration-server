@@ -13,6 +13,7 @@ import THIS.Yaml
 import THIS.Config.ProjectConfig
 import THIS.Config.Executor
 import THIS.ConnectionsManager
+import THIS.Protocols
 
 actionCommands :: String -> [(String, String)] -> Executor -> Either String [String]
 actionCommands action pairs exe =
@@ -21,11 +22,7 @@ actionCommands action pairs exe =
     Just ac -> mapM (eval action pairs) (acCommands ac)
 
 environment :: ProjectConfig -> Phase -> [(String, String)]
-environment pc ph = phEnvironment ph ++ params ++ pcEnvironment pc
-  where
-    params = case hcVM (phWhere ph) of
-               Nothing -> []
-               Just vm -> vmParams vm
+environment pc ph = phEnvironment ph ++ hcParams (phWhere ph) ++ pcEnvironment pc
 
 execute :: FilePath -> String -> YamlM ()
 execute path phase = do
@@ -45,14 +42,19 @@ execute path phase = do
                             then [phase]
                             else exActions exe
                      else phActions ph
-      forM_ aclist $ \action -> do
-        case lookupAction action exe of
-          Nothing -> lift $ putStrLn $ "Action is not supported by executor: " ++ action
-          Just ac -> when (action /= "$$") $ do
-            case actionCommands action (environment pc ph) exe of
-              Left err -> lift $ putStrLn $ "Error in command for action " ++ action ++ ": " ++ err
-              Right cmds -> forM_ cmds $ \cmd -> 
-                                 lift $ putStrLn $ "EXEC: " ++ cmd
+      liftIO $ print (hcParams host)
+      liftIO $ manageConnections (hcParams host) $ do
+          forM_ aclist $ \action -> do
+            case lookupAction action exe of
+              Nothing -> liftIO $ putStrLn $ "Action is not supported by executor: " ++ action
+              Just ac -> when (action /= "$$") $ do
+                case actionCommands action (environment pc ph) exe of
+                  Left err -> liftIO $ putStrLn $ "Error in command for action " ++ action ++ ": " ++ err
+                  Right cmds -> forM_ cmds $ \cmd -> do
+                                     p <- getCommandProtocol (hcHostname host)
+                                     liftIO $ putStrLn $ "EXEC: " ++ cmd
+                                     r <- liftIO $ runCommandA p cmd
+                                     liftIO $ print r
       case hcVM host of
         Nothing -> return ()
         Just vm -> when (phShutdownVM ph) $
