@@ -7,11 +7,11 @@ import THIS.Protocols.SSHCommands
 
 initializeProtocols :: IO ()
 initializeProtocols = do
-  initializeProtocol LibSSH2
+  initializeProtocol (LibSSH2 undefined)
   initializeProtocol (SSHCommands undefined)
 
 deinitializeProtocols :: IO ()
 deinitializeProtocols = do
-  deinitializeProtocol LibSSH2
+  deinitializeProtocol (LibSSH2 undefined)
   deinitializeProtocol (SSHCommands undefined)
 
