@@ -2,6 +2,7 @@
 module THIS.Protocols.SSHCommands where
 
 import Control.Applicative
+import Control.Monad
 import System.Process
 import System.Exit
 import Text.Printf
@@ -31,8 +32,11 @@ runSSH cfg params = do
     return (rc2int ec, out)
 
 instance CommandProtocol SSHCommands where
-  runCommand (SSHCommands cfg) command =
-    runSSH cfg [command]
+  runCommands (SSHCommands cfg) commands = do
+    outs <- forM commands $ \cmd -> runSSH cfg [cmd]
+    return (fst (last outs), map snd outs)
+
+  changeWorkingDirectory _ _ = fail "chdir not implemented"
 
 instance SendProtocol SSHCommands where
   sendFile (SSHCommands cfg) local remote = do

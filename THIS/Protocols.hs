@@ -36,20 +36,23 @@ loadConnectionInfo pairs = ConnectionInfo
 
 initializeProtocols :: IO ()
 initializeProtocols = do
-  initializeProtocol (LibSSH2 undefined)
+  initializeProtocol (LibSSH2 undefined undefined)
   initializeProtocol (SSHCommands undefined)
 
 deinitializeProtocols :: IO ()
 deinitializeProtocols = do
-  deinitializeProtocol (LibSSH2 undefined)
+  deinitializeProtocol (LibSSH2 undefined undefined)
   deinitializeProtocol (SSHCommands undefined)
 
 disconnectA :: AnyProtocol -> IO ()
 disconnectA (AnyProtocol p) = disconnect p
 
-runCommandA :: AnyCommandProtocol -> String -> IO (Int, String)
-runCommandA (AnyCommandProtocol p) command =
-  runCommand p command
+runCommandsA :: AnyCommandProtocol -> [String] -> IO (Int, [String])
+runCommandsA (AnyCommandProtocol p) commands =
+  runCommands p commands
+
+chdirA :: AnyCommandProtocol -> FilePath -> IO ()
+chdirA (AnyCommandProtocol p) dir = changeWorkingDirectory p dir
 
 sendFileA :: AnySendProtocol -> FilePath -> FilePath -> IO ()
 sendFileA (AnySendProtocol p) local remote =

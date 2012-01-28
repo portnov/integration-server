@@ -30,7 +30,8 @@ class Protocol p where
 data AnyProtocol = forall p. Protocol p => AnyProtocol p
 
 class (Protocol p) => CommandProtocol p where
-  runCommand :: p -> String -> IO (Int, String)
+  changeWorkingDirectory :: p -> FilePath -> IO ()
+  runCommands :: p -> [String] -> IO (Int, [String])
 
 data AnyCommandProtocol =
   forall p. CommandProtocol p => AnyCommandProtocol p

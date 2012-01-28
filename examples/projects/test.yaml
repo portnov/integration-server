@@ -5,6 +5,16 @@ directory: /home/portnov/src/integration-server/test/
 hosts:
   local:
     host: localhost
+    port: 2345
+    login: portnov
+    path: /home/portnov/temp/test/
+    known-hosts: /home/portnov/.ssh/known_hosts
+    public-key:  /home/portnov/.ssh/id_rsa.pub
+    private-key: /home/portnov/.ssh/id_rsa
+
+  lenovo:
+    host: lenovo.local
+    port: 2345
     path: /home/portnov/temp/test/
     known-hosts: /home/portnov/.ssh/known_hosts
     public-key:  /home/portnov/.ssh/id_rsa.pub
@@ -12,6 +22,6 @@ hosts:
 
 phases:
   build:
-    where: local
+    where: lenovo
     actions: [all, clean]
     executor: make

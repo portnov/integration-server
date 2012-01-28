@@ -2,6 +2,7 @@
 module THIS.Protocols.LibSSH2 where
 
 import Control.Applicative
+import Control.Concurrent.STM
 import Network
 import Network.Socket hiding (connect)
 import System.IO
@@ -15,7 +16,7 @@ import THIS.Types
 import THIS.Yaml
 import THIS.Protocols.Types
 
-data LibSSH2 = LibSSH2 Session
+data LibSSH2 = LibSSH2 Session (TMVar FilePath)
 
 instance Protocol LibSSH2 where
   initializeProtocol _ = do
@@ -26,52 +27,48 @@ instance Protocol LibSSH2 where
   
   connect cfg = do
     sock <- socketConnect (cHost cfg) (cPort cfg)
-    handle <- socketToHandle sock ReadWriteMode
     session <- initSession
     handshake session sock
-    putStrLn "handshake done"
-    putStrLn $ printf "checkHost %s %s %s"
-        (cHost cfg)
-        (show $ cPort cfg)
-        (cKnownHosts cfg)
     checkHost session
         (cHost cfg)
         (cPort cfg)
         (cKnownHosts cfg)
-    putStrLn "CheckHost done"
-    putStrLn $ printf "Auth: %s %s %s"
-        (cUsername cfg)
-        (cPublicKey cfg)
-        (cPrivateKey cfg)
     publicKeyAuthFile session
         (cUsername cfg)
         (cPublicKey cfg)
         (cPrivateKey cfg)
         ""
-    putStrLn "Auth done"
-    return (LibSSH2 session)
+    -- setTraceMode session [T_TRANS, T_CONN, T_SOCKET, T_ERROR]
+    var <- newEmptyTMVarIO
+    return (LibSSH2 session var)
 
-  disconnect (LibSSH2 session) = do
+  disconnect (LibSSH2 session _) = do
     disconnectSession session "Done."
     freeSession session
     return ()
 
 instance CommandProtocol LibSSH2 where
-  runCommand (LibSSH2 session) command = do
-    withChannel session $ \ch -> do
-        channelShell ch command
-        result <- readAllChannel ch
-        let result' = decodeString result
-        return result'
+  runCommands (LibSSH2 session var) commands = do
+      mbd <- atomically $ tryTakeTMVar var
+      let cmds = case mbd of
+                   Nothing -> commands
+                   Just dir -> map (inDir dir) commands
+      (rc, out) <- execCommands session cmds
+      return (rc, map decodeString out)
+    where
+      inDir dir cmd = printf "if cd %s; then %s; else exit 1; fi" dir cmd
+
+  changeWorkingDirectory (LibSSH2 _ var) dir =
+      atomically $ putTMVar var dir
 
 instance SendProtocol LibSSH2 where
-  sendFile (LibSSH2 session) local remote = do
+  sendFile (LibSSH2 session _) local remote = do
     sz <- scpSendFile session 0o644 local remote
     return ()
 
-  makeRemoteDirectory (LibSSH2 session) path = do
+  makeRemoteDirectory (LibSSH2 session _) path = do
     (rc,output) <- withChannel session $ \ch -> do
-                     channelShell ch $ "mkdir " ++ path
+                     channelExecute ch $ "mkdir " ++ path
                      readAllChannel ch
     if rc /= 0
       then fail $ "Cannot make remote dir " ++ path ++ ", error " ++ show rc
@@ -80,7 +77,7 @@ instance SendProtocol LibSSH2 where
   sendTree _ _ _ = fail "sendTree: Not implemented"
     
 instance ReceiveProtocol LibSSH2 where
-  receiveFile (LibSSH2 session) remote local = do
+  receiveFile (LibSSH2 session _) remote local = do
     sz <- scpReceiveFile session remote local
     return ()
 

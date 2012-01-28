@@ -44,17 +44,17 @@ execute path phase = do
                      else phActions ph
       liftIO $ print (hcParams host)
       liftIO $ manageConnections (hcParams host) $ do
+          commands <- getCommandProtocol (hcHostname host)
+          liftIO $ chdirA commands (hcPath host)
           forM_ aclist $ \action -> do
             case lookupAction action exe of
               Nothing -> liftIO $ putStrLn $ "Action is not supported by executor: " ++ action
               Just ac -> when (action /= "$$") $ do
                 case actionCommands action (environment pc ph) exe of
                   Left err -> liftIO $ putStrLn $ "Error in command for action " ++ action ++ ": " ++ err
-                  Right cmds -> forM_ cmds $ \cmd -> do
-                                     p <- getCommandProtocol (hcHostname host)
-                                     liftIO $ putStrLn $ "EXEC: " ++ cmd
-                                     r <- liftIO $ runCommandA p cmd
-                                     liftIO $ print r
+                  Right cmds -> do
+                                r <- liftIO $ runCommandsA commands (cmds)
+                                liftIO $ print r
       case hcVM host of
         Nothing -> return ()
         Just vm -> when (phShutdownVM ph) $
