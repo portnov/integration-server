@@ -6,6 +6,7 @@ module THIS.Templates.Text
     evalTemplate
   ) where
 
+import Control.Monad
 import Data.Maybe
 import Data.Object
 import Data.Object.Yaml
@@ -62,7 +63,7 @@ renderTemplate object pairs list = concatMap go list
     lookupYaml object vars dictname keyname = do
       dict <- get dictname object :: Either YamlError StringObject
       let key = fromMaybe "" $ lookup keyname vars
-      get key dict
+      get key dict `mplus` get "$$" dict
 
 evalTemplate :: FilePath -> StringObject -> [(String, String)] -> String -> Either YamlError String
 evalTemplate path object pairs template = do

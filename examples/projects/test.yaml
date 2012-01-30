@@ -6,6 +6,10 @@ host-by-environment:
   home: lenovo
   work: local
 
+nginx-conf-path:
+  production: /etc/nginx
+  $$: .
+
 hosts:
   local:
     host: localhost
@@ -28,4 +32,6 @@ phases:
   build:
     where: ${host-by-environment[environment]}
     actions: [all, clean]
+    create-files:
+      nginx.conf: ${nginx-conf-path[target]}/nginx.conf
     executor: make

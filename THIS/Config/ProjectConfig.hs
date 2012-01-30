@@ -100,6 +100,10 @@ convertPhase path project vars hosts (name, object) = do
   executor <- get "executor" object
   actions  <- getOptional "actions" [] object
   parser   <- getOptional "parser" executor object
+  newFilesT <- getPairs =<< getOptional "create-files" (Mapping []) object
+  newTs    <- mapM (evalTemplate path project (pairs ++ vars)) (map fst newFilesT)
+  newFs    <- mapM (evalTemplate path project (pairs ++ vars)) (map snd newFilesT)
+  let newFiles = zip newTs newFs
   files    <- mapM convertFiles =<< getOptional "files" [] object
   shell    <- getOptional "shell" [] object
   shell'   <- mapM (evalTemplate path project pairs) shell
@@ -111,6 +115,7 @@ convertPhase path project vars hosts (name, object) = do
                    phExecutor   = executor,
                    phActions    = actions,
                    phParser     = parser,
+                   phCreateFiles = newFiles,
                    phFiles      = files,
                    phShellCommands = shell',
                    phEnvironment = env } )

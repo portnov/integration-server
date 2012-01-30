@@ -33,6 +33,7 @@ data Phase = Phase {
     phExecutor :: String,
     phActions :: [String],
     phParser :: String,
+    phCreateFiles :: [(FilePath, FilePath)],
     phFiles :: [(String, [FilePath])],
     phShellCommands :: [String],
     phEnvironment :: [(String, String)] }
