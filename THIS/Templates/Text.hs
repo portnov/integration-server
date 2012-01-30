@@ -22,23 +22,37 @@ import THIS.Templates
 
 data Item =
     Literal String
-  | Variable String
-  | Lookup String String
+  | Variable String String
+  | Lookup String String String
   deriving (Eq, Show)
+
+identifier :: Parser String
+identifier = (many1 $ noneOf "[]{}$:? \t\n\r") <?> "identifier"
 
 pVariable :: Parser Item
 pVariable = do
   char '$'
   char '{'
-  name <- many1 $ noneOf "[]{}$: \t\n\r"
-  c <- char '}' <|> char '['
+  name <- identifier
+  c <- oneOf "}[?"
   case c of
-    '}' -> return (Variable name)
-    '[' -> do
-           key <- many1 $ noneOf "[]{}$: \t\n\r"
-           char ']'
+    '?' -> do
+           def <- many1 $ noneOf "}"
            char '}'
-           return (Lookup name key)
+           return (Variable name def)
+    '}' -> return (Variable name "")
+    '[' -> do
+           key <- identifier
+           char ']'
+           e <- oneOf "}?"
+           case e of
+             '}' -> return (Lookup name key "")
+             '?' -> do
+                    def <- many1 $ noneOf "}"
+                    char '}'
+                    return (Lookup name key def)
+             _ -> fail $ "Unexpected: " ++ [e]
+    _ -> fail $ "Unexpected: " ++ [c]
 
 pPlain :: Parser Item
 pPlain = do
@@ -58,10 +72,11 @@ renderTemplate :: StringObject -> [(String, String)] -> [Item] -> String
 renderTemplate object pairs list = concatMap go list
   where
     go (Literal str) = str
-    go (Variable var) = fromMaybe "" $ lookup var pairs
-    go (Lookup dict key) = case lookupYaml object pairs dict key of
-                             Left _ -> ""
-                             Right val -> val
+    go (Variable var def) = fromMaybe def $ lookup var pairs
+    go (Lookup dict key def) =
+        case lookupYaml object pairs dict key of
+          Left _ -> def
+          Right val -> val
 
     lookupYaml :: StringObject -> [(String, String)] -> String -> String -> Either YamlError String
     lookupYaml object vars dictname keyname = do
