@@ -21,22 +21,20 @@ data XMLTemplateError = XMLTemplateError String
 
 instance Exception XMLTemplateError
 
-evalXMLFile :: StringObject -> [(String, String)] -> FilePath -> YamlM FilePath
+evalXMLFile :: StringObject -> [(String, String)] -> FilePath -> YamlM String
 evalXMLFile object vars name = do
   (path, tpl) <- readTemplate name
-  tempPath <- liftIO $ tempFile
-  liftIO $ processXML path tpl object vars tempPath
-  return tempPath
+  s <- liftIO $ processXML path tpl object vars
+  return (concat s)
 
-processXML :: FilePath -> String -> StringObject -> [(String, String)] -> FilePath -> IO ()
-processXML path tpl object vars dst = do
+processXML :: FilePath -> String -> StringObject -> [(String, String)] -> IO [String]
+processXML path tpl object vars = do
   runX $
     readString [withValidate yes, withInputEncoding utf8] tpl
     >>>
     evalXML path tpl object vars
     >>>
-    writeDocument [withIndent yes, withOutputEncoding utf8] dst
-  return ()
+    writeDocumentToString [withIndent yes, withOutputEncoding utf8]
 
 evalXML :: FilePath -> String -> StringObject -> [(String, String)] -> IOStateArrow s XmlTree XmlTree
 evalXML path tpl object vars =
