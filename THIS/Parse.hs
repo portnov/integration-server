@@ -1,8 +1,13 @@
 
-module THIS.Parse where
+module THIS.Parse
+  (ParserResult (..),
+   runParser
+  ) where
 
 import Control.Monad
 import Control.Monad.State as St
+import Data.Maybe
+import Data.List
 import Text.Regex.PCRE
 
 import THIS.Types
@@ -62,6 +67,20 @@ addOtherLine line =
 step :: State ParserState ()
 step = modify $ \st -> st { psLineNr = psLineNr st + 1 }
 
+continueNames :: [String] -> [String]
+continueNames list = list ++ drop (length list) (map show [1..])
+
+matchR :: String -> [(String, String, [String])] -> Maybe (String, [(String, String)])
+matchR _ [] = Nothing
+matchR line ((name, regex, captures):other) =
+  let allMatches = line =~ regex :: [[String]]
+  in case allMatches of
+       [] -> matchR line other
+       [list] -> let names = continueNames captures
+                     pairs = zip names (tail list)
+                 in  Just (name, pairs)
+       _ -> error $ "Unexpected regex result: " ++ show allMatches
+
 parse :: [(String, ResultGroup)] -> [String] -> [ParserResult]
 parse pairs strings = psResult $ execState (mapM go strings) emptyState
   where
@@ -89,17 +108,63 @@ parse pairs strings = psResult $ execState (mapM go strings) emptyState
                                               pairs = zip names (tail list)
                                           addParams pairs
 
-continueNames :: [String] -> [String]
-continueNames list = list ++ drop (length list) (map show [1..])
+groupName :: ParserResult -> String
+groupName pr =
+  case lookup "group" (prParams pr) of
+    Just group -> group
+    Nothing    -> prGroupName pr
 
-matchR :: String -> [(String, String, [String])] -> Maybe (String, [(String, String)])
-matchR _ [] = Nothing
-matchR line ((name, regex, captures):other) =
-  let allMatches = line =~ regex :: [[String]]
-  in case allMatches of
-       [] -> matchR line other
-       [list] -> let names = continueNames captures
-                     pairs = zip names (tail list)
-                 in  Just (name, pairs)
-       _ -> error $ "Unexpected regex result: " ++ show allMatches
+runParser :: Parser -> String -> (Int, [String]) -> Either YamlError (String, [ParserResult])
+runParser (Parser parser) action (code, output) =
+  case lookup action parser `mplus` lookup "$$" parser of
+    Nothing -> Left $ "Action is not supported by parser: " ++ action
+    Just ap -> let pre = lookupCode code (apResultsMap ap)
+                   results = parse (apGroups ap) output
+                   groups  = map groupName results
+                   res = map (lookupGroup code (apResultsMap ap)) groups
+                   maxResult = selectMaxResult (map fst $ apResultsMap ap) res
+               in  Right (maxResult, results)
+
+selectMaxResult :: [String] -> [String] -> String
+selectMaxResult base results =
+    maximumBy cmpOrder results
+  where
+    full = completeResultsList base
+    cmpOrder x y = fromMaybe (compare x y) $ do
+                     i <- findIndex (== x) full
+                     j <- findIndex (== y) full
+                     return $ compare i j
+
+completeResultsList :: [String] -> [String]
+completeResultsList list =
+  ["ok" | "ok" `notElem` list]
+  ++ list
+  ++ ["warning" | "warning" `notElem` list]
+  ++ ["error" | "error" `notElem` list]
+
+lookupGroup :: Int -> [(String, ResultsRange)] -> String -> String
+lookupGroup 0 [] _ = "ok"
+lookupGroup _ [] _ = "error"
+lookupGroup c ((result, range):other) group
+    | group `matches` range = result
+    | otherwise             = lookupGroup c other group
+
+matches :: String -> ResultsRange -> Bool
+matches group (ResultsList list) = any good list
+  where good (GroupName name) = (name == group)
+        good _                = False
+matches group _ = False
+
+lookupCode :: Int -> [(String, ResultsRange)] -> String
+lookupCode 0 [] = "ok"
+lookupCode _ [] = "error"
+lookupCode c ((result, range):other)
+    | c `inRange` range = result
+    | otherwise         = lookupCode c other
+
+inRange :: Int -> ResultsRange -> Bool
+inRange c (ResultsList list) = any good list
+  where good (ReturnCode r) = (r == c)
+        good _              = False
+inRange c (CodesRange a b)  = (c >= a) && (c <= b)
 

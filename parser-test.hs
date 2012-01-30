@@ -9,15 +9,15 @@ import THIS.Config.Parser
 import THIS.Parse
 
 main = do
-  Right (Parser pairs) <- runErrorT $ loadParser "ghc"
+  Right parser <- runErrorT $ loadParser "ghc"
   text <- readFile "ghc-output.txt"
   let ls = lines text
-      apgs = apGroups $ fromJust $ lookup "$$" pairs
-      results = parse apgs ls
+      Right (rr, results) = runParser parser "build" (1, ls)
   forM_ results $ \result -> do
     putStrLn $ "Group: " ++ prGroupName result
     forM_ (prParams result) $ \(key, value) ->
       putStrLn $ "  " ++ key ++ ": " ++ value
     forM_ (prOtherLines result) putStrLn
     putStrLn ""
+  putStrLn $ "Result: " ++ rr
 
