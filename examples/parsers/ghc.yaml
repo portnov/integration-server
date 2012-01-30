@@ -1,7 +1,15 @@
+clean:
+  result:
+    ok: [all, ""]
+
+  groups:
+    all:
+      "": []
 
 $$:
   result:
     ok: 0
+    noop: make-all-done
     warning: Warning
 
   groups:
@@ -12,3 +20,6 @@ $$:
       "^([^ ]+):(\\d+):(\\d+):$": [filename, line, column]
       "^\\s+(\\w+):(.*)$": [group, message]
       ".+": []
+
+    make-all-done:
+      "^make: Nothing to be done for `(\\w+)'.": [goal]

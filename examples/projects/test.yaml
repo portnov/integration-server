@@ -24,7 +24,7 @@ hosts:
   lenovo:
     host: lenovo.local
     port: 2345
-    path: /home/portnov/temp/test/
+    path: /home/this/temp/test/
     known-hosts: /home/portnov/.ssh/known_hosts
     public-key:  /home/portnov/.ssh/id_rsa.pub
     private-key: /home/portnov/.ssh/id_rsa
@@ -46,9 +46,11 @@ phases:
     actions: [all, clean]
 
     domain: example.com
+    ENV: LANG=C
 
     create-files:
       nginx.site.conf: ${nginx-conf-path[target]}/${domain}.conf
 
     executor: make
+    parser: ghc
 

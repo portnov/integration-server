@@ -14,7 +14,7 @@ import Data.Maybe
 import Data.Object
 import Data.Object.Yaml
 import Text.Parsec
-import Text.Parsec.String
+import Text.Parsec.String as P
 
 import THIS.Types
 import THIS.Yaml
@@ -26,13 +26,13 @@ data Item =
   | Lookup String String String
   deriving (Eq, Show)
 
-identifier :: Parser String
+identifier :: P.Parser String
 identifier = (many1 $ noneOf "[]{}$:? \t\n\r") <?> "identifier"
 
-defaultValue :: Parser String
+defaultValue :: P.Parser String
 defaultValue = (many1 $ noneOf "}") <?> "variable default value"
 
-pVariable :: Parser Item
+pVariable :: P.Parser Item
 pVariable = do
   char '$'
   char '{'
@@ -57,29 +57,29 @@ pVariable = do
              _ -> fail $ "Unexpected: " ++ [e]
     _ -> fail $ "Unexpected: " ++ [c]
 
-pPlain :: Parser Item
+pPlain :: P.Parser Item
 pPlain = do
   text <- (many1 $ noneOf "$") <?> "any text without dollar signs"
   return (Literal text)
 
-pTwoDollars :: Parser Item
+pTwoDollars :: P.Parser Item
 pTwoDollars = do
   string "$$" <?> "two dollar signs"
   return (Literal "$")
 
-pDollarChar :: Parser Item
+pDollarChar :: P.Parser Item
 pDollarChar = do
   char '$'
   x <- anyChar
   return (Literal ['$', x])
 
-pDollarEnd :: Parser Item
+pDollarEnd :: P.Parser Item
 pDollarEnd = do
   char '$'
   eof
   return (Literal "$")
 
-pTemplate :: Parser [Item]
+pTemplate :: P.Parser [Item]
 pTemplate = many $ try pVariable <|> try pPlain <|> try pTwoDollars <|> try pDollarChar <|> pDollarEnd
 
 parseTemplate :: FilePath -> String -> Either YamlError [Item]

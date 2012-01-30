@@ -4,6 +4,7 @@ module THIS.Execute where
 import Control.Monad
 import Control.Monad.Error
 import Control.Monad.Trans
+import Control.Failure
 import Data.Object
 import System.FilePath
 import System.FilePath.Glob
@@ -13,10 +14,12 @@ import THIS.Types
 import THIS.Yaml
 import THIS.Config.ProjectConfig
 import THIS.Config.Executor
+import THIS.Config.Parser
 import THIS.ConnectionsManager
 import THIS.Protocols
 import THIS.Templates.Text
 import THIS.Hypervisor
+import THIS.Parse
 
 actionCommands :: String -> [(String, String)] -> Executor -> Either String [String]
 actionCommands action pairs exe =
@@ -41,6 +44,7 @@ execute path phase extVars = do
         Just vm -> do
                    liftIO $ putStrLn $ "Running VM"
                    liftIO $ runVM object (hcParams host) vm
+      parser <- loadParser (phParser ph)
       manageConnections (hcParams host) $ do
           when (not $ null $ phCreateFiles ph) $ do
             send <- getSendProtocol (hcHostname host)
@@ -48,15 +52,15 @@ execute path phase extVars = do
                       temp <- evalTextFile (Mapping []) (phEnvironment ph) template
                       liftIO $ putStrLn $ "Sending file: " ++ path
                       lift $ sendFileA send temp (hcPath host </> path)
-          exe <- lift $ loadExecutor (phExecutor ph)
+          (exePath, exe) <- lift $ loadExecutor (phExecutor ph)
           let aclist = if null (phActions ph)
                          then if null (exActions exe)
                                 then [phase]
                                 else exActions exe
                          else phActions ph
           liftIO $ print (hcParams host)
-          commands <- getCommandProtocol (hcHostname host)
-          liftIO $ chdirA commands (hcPath host)
+          cmdP <- getCommandProtocol (hcHostname host)
+          liftIO $ chdirA cmdP (hcPath host)
           forM_ aclist $ \action -> do
             case lookupAction action exe of
               Nothing -> liftIO $ putStrLn $ "Action is not supported by executor: " ++ action
@@ -64,8 +68,24 @@ execute path phase extVars = do
                 case actionCommands action (environment pc ph) exe of
                   Left err -> liftIO $ putStrLn $ "Error in command for action " ++ action ++ ": " ++ err
                   Right cmds -> do
-                                r <- liftIO $ runCommandsA commands (cmds)
-                                liftIO $ print r
+                                let env = ("action", action): phEnvironment ph
+                                commands <- case mapM (evalTemplate exePath object env) cmds of
+                                              Left err -> lift $ failure err
+                                              Right x -> return x
+                                liftIO $ putStrLn $ "Executing: " ++ show commands
+                                (ec, out) <- liftIO $ runCommandsA cmdP commands
+                                liftIO $ putStrLn $ "Output: " ++ show out
+                                case runParser parser action (ec, out) of
+                                  Left err -> liftIO $ putStrLn $ "Parser error: " ++ err
+                                  Right (rr, results) -> liftIO $ do
+                                      forM_ results $ \result -> do
+                                        putStrLn $ "Group: " ++ prGroupName result
+                                        forM_ (prParams result) $ \(key, value) ->
+                                          putStrLn $ "  " ++ key ++ ": " ++ value
+                                        forM_ (prOtherLines result) $ \l ->
+                                          liftIO $ putStrLn l
+                                        putStrLn ""
+                                      putStrLn $ "Result: " ++ rr
       case hcVM host of
         Nothing -> return ()
         Just vm -> when (phShutdownVM ph) $

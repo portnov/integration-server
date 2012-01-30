@@ -2,4 +2,4 @@ configure:
   commands: ./configure ${FLAGS}
 
 $$:
-  commands: make $$
+  commands: ${ENV} make ${action} >&1

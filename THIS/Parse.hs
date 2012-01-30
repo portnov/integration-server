@@ -82,11 +82,13 @@ matchR line ((name, regex, captures):other) =
        _ -> error $ "Unexpected regex result: " ++ show allMatches
 
 parse :: [(String, ResultGroup)] -> [String] -> [ParserResult]
-parse pairs strings = psResult $ execState (mapM go strings) emptyState
+parse pairs strings =
+    filter (\r -> prGroupName r /= "") $ psResult $ execState (mapM go strings >> saveResults) emptyState
   where
     go :: String -> State ParserState ()
     go line = do
-      case matchR line [(name, fst $ head (rgLines g), snd $ head (rgLines g)) | (name, g) <- pairs] of
+      let ms = [(name, fst $ head (rgLines g), snd $ head (rgLines g)) | (name, g) <- pairs] 
+      case matchR line ms of
         Just (group, params) -> do
                                 saveResults
                                 setCurrentGroup group (lookup group pairs)
@@ -126,6 +128,7 @@ runParser (Parser parser) action (code, output) =
                in  Right (maxResult, results)
 
 selectMaxResult :: [String] -> [String] -> String
+selectMaxResult _ [] = "error"
 selectMaxResult base results =
     maximumBy cmpOrder results
   where
