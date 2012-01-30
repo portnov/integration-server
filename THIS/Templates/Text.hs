@@ -84,9 +84,11 @@ pTemplate = many $ try pVariable <|> try pPlain <|> try pTwoDollars <|> try pDol
 
 parseTemplate :: FilePath -> String -> Either YamlError [Item]
 parseTemplate path str =
-  case parse pTemplate path str of
-    Left err -> Left (show err)
-    Right tpl -> Right tpl
+  if '$' `elem` str
+    then case parse pTemplate path str of
+           Left err -> Left (show err)
+           Right tpl -> Right tpl
+    else Right [Literal str]
 
 renderTemplate :: StringObject -> [(String, String)] -> [Item] -> String
 renderTemplate object pairs list = concatMap go list

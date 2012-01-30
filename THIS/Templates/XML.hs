@@ -1,5 +1,8 @@
 {-# LANGUAGE DeriveDataTypeable #-}
-module THIS.Templates.XML where
+module THIS.Templates.XML
+  (XMLTemplateError (..),
+   evalXMLFile
+  ) where
 
 import Control.Monad.Trans
 import Control.Exception
