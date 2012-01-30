@@ -159,7 +159,7 @@ lookupRemove k pairs = go [] k pairs
       | k == k' = (Just v, acc ++ other)
       | otherwise = go (acc ++ [(k',v)]) k other
 
-loadYaml :: String -> String -> YamlM StringObject
+loadYaml :: String -> String -> YamlM (FilePath, StringObject)
 loadYaml kind name = do
   let yamlName = if ".yaml" `isSuffixOf` name
                    then name
@@ -181,7 +181,8 @@ loadYaml kind name = do
     Right yaml -> case getInherit yaml of
                     Left err -> failure err
                     Right (Just p, yaml') -> do
-                        parent <- loadYaml kind p
-                        return $ merge parent yaml'
-                    Right (Nothing, _) -> return yaml
+                        (parentPath, parent) <- loadYaml kind p
+                        let fullPath = parentPath ++ " + " ++ parentPath
+                        return (fullPath, merge parent yaml')
+                    Right (Nothing, _) -> return (path, yaml)
 

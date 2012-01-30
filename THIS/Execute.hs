@@ -19,7 +19,7 @@ actionCommands :: String -> [(String, String)] -> Executor -> Either String [Str
 actionCommands action pairs exe =
   case lookupAction action exe of
     Nothing -> Left $ "Unknown action in executor: " ++ action
-    Just ac -> mapM (eval action pairs) (acCommands ac)
+    Just ac -> Right (acCommands ac)
 
 environment :: ProjectConfig -> Phase -> [(String, String)]
 environment pc ph = phEnvironment ph ++ hcParams (phWhere ph) ++ pcEnvironment pc

@@ -15,6 +15,9 @@ import System.Directory
 
 import THIS.Types
 import THIS.Yaml
+import THIS.Templates.Text
+
+import Debug.Trace
 
 loadHost :: FilePath -> YamlM (String, HostConfig)
 loadHost path = do
@@ -35,13 +38,13 @@ loadCommonHosts = do
       host <- loadHost path
       return (name, snd host)
 
-loadProjectConfig :: String -> [(String, HostConfig)] -> YamlM ProjectConfig
-loadProjectConfig name hosts = do
-  object <- loadYaml "projects" name
-  ErrorT (return $ convertProject hosts object)
+loadProjectConfig :: String -> [(String, String)] -> [(String, HostConfig)] -> YamlM ProjectConfig
+loadProjectConfig name vars hosts = do
+  (path, object) <- loadYaml "projects" name
+  ErrorT $ return $ convertProject path vars hosts object
 
-convertProject :: [(String, HostConfig)] -> StringObject -> Either YamlError ProjectConfig
-convertProject commonHosts object = do
+convertProject :: FilePath -> [(String, String)] -> [(String, HostConfig)] -> StringObject -> Either YamlError ProjectConfig
+convertProject path vars commonHosts object = do
   dir <- get "directory" object
   let this = HostConfig {
                hcHostname = "localhost",
@@ -50,7 +53,7 @@ convertProject commonHosts object = do
                hcParams   = [("host", "localhost")] }
   hosts <- mapM convertHost =<< get "hosts" object
   let allHosts = [("this", this)] ++ commonHosts ++ hosts
-  phases <- mapM (convertPhase allHosts) =<< get "phases" object
+  phases <- mapM (convertPhase path object vars allHosts) =<< get "phases" object
   env <- getPairs object
   return $ ProjectConfig {
              pcDirectory = dir,
@@ -84,11 +87,13 @@ convertHost (name, object) = do
              hcVM = mbvm,
              hcParams = params } )
 
-convertPhase :: [(String, HostConfig)] -> (String, StringObject) -> Either YamlError (String, Phase)
-convertPhase hosts (name, object) = do
+convertPhase :: FilePath -> StringObject -> [(String, String)] -> [(String, HostConfig)] -> (String, StringObject) -> Either YamlError (String, Phase)
+convertPhase path project vars hosts (name, object) = do
+  pairs <- getPairs object
   whs <- get "where" object
-  whr <- case lookup whs hosts of
-           Nothing -> fail $ "Unknown host: " ++ whs
+  whs' <- evalTemplate path project (pairs ++ vars) whs
+  whr <- case lookup whs' hosts of
+           Nothing -> fail $ "Unknown host: " ++ whs'
            Just hc -> return hc
   shutdown <- getOptional "shutdown" True object
   preexec  <- getOptional "pre-execute" [] object
@@ -97,6 +102,7 @@ convertPhase hosts (name, object) = do
   parser   <- getOptional "parser" executor object
   files    <- mapM convertFiles =<< getOptional "files" [] object
   shell    <- getOptional "shell" [] object
+  shell'   <- mapM (evalTemplate path project pairs) shell
   env      <- getPairs object
   return (name, Phase {
                    phWhere      = whr,
@@ -106,7 +112,7 @@ convertPhase hosts (name, object) = do
                    phActions    = actions,
                    phParser     = parser,
                    phFiles      = files,
-                   phShellCommands = shell,
+                   phShellCommands = shell',
                    phEnvironment = env } )
 
 convertFiles :: (String, StringObject) -> Either YamlError (String, [FilePath])

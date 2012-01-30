@@ -2,6 +2,10 @@ title: Test project
 
 directory: /home/portnov/src/integration-server/test/
 
+host-by-environment:
+  home: lenovo
+  work: local
+
 hosts:
   local:
     host: localhost
@@ -22,6 +26,6 @@ hosts:
 
 phases:
   build:
-    where: lenovo
+    where: ${host-by-environment[environment]}
     actions: [all, clean]
     executor: make
