@@ -29,6 +29,9 @@ data Item =
 identifier :: Parser String
 identifier = (many1 $ noneOf "[]{}$:? \t\n\r") <?> "identifier"
 
+defaultValue :: Parser String
+defaultValue = (many1 $ noneOf "}") <?> "variable default value"
+
 pVariable :: Parser Item
 pVariable = do
   char '$'
@@ -37,7 +40,7 @@ pVariable = do
   c <- oneOf "}[?"
   case c of
     '?' -> do
-           def <- many1 $ noneOf "}"
+           def <- defaultValue
            char '}'
            return (Variable name def)
     '}' -> return (Variable name "")
@@ -48,7 +51,7 @@ pVariable = do
            case e of
              '}' -> return (Lookup name key "")
              '?' -> do
-                    def <- many1 $ noneOf "}"
+                    def <- defaultValue
                     char '}'
                     return (Lookup name key def)
              _ -> fail $ "Unexpected: " ++ [e]
@@ -56,11 +59,28 @@ pVariable = do
 
 pPlain :: Parser Item
 pPlain = do
-  text <- many1 $ noneOf "$"
+  text <- (many1 $ noneOf "$") <?> "any text without dollar signs"
   return (Literal text)
 
+pTwoDollars :: Parser Item
+pTwoDollars = do
+  string "$$" <?> "two dollar signs"
+  return (Literal "$")
+
+pDollarChar :: Parser Item
+pDollarChar = do
+  char '$'
+  x <- anyChar
+  return (Literal ['$', x])
+
+pDollarEnd :: Parser Item
+pDollarEnd = do
+  char '$'
+  eof
+  return (Literal "$")
+
 pTemplate :: Parser [Item]
-pTemplate = many $ try pVariable <|> pPlain
+pTemplate = many $ try pVariable <|> try pPlain <|> try pTwoDollars <|> try pDollarChar <|> pDollarEnd
 
 parseTemplate :: FilePath -> String -> Either YamlError [Item]
 parseTemplate path str =
