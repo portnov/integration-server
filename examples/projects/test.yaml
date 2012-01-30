@@ -5,6 +5,7 @@ directory: /home/portnov/src/integration-server/test/
 host-by-environment:
   home: lenovo
   work: local
+  virtual: lenny32
 
 nginx-conf-path:
   production: /etc/nginx/sites-enabled/
@@ -27,6 +28,17 @@ hosts:
     known-hosts: /home/portnov/.ssh/known_hosts
     public-key:  /home/portnov/.ssh/id_rsa.pub
     private-key: /home/portnov/.ssh/id_rsa
+
+  lenny32:
+    type: vm
+    host: lenny32.local
+    path: /home/portnov/temp/test/
+    known-hosts: /home/portnov/.ssh/known_hosts
+    public-key:  /home/portnov/.ssh/id_rsa.pub
+    private-key: /home/portnov/.ssh/id_rsa
+    empty: true
+    template: template.xml
+    name: lenny32
 
 phases:
   build:

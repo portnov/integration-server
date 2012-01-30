@@ -16,6 +16,7 @@ import THIS.Config.Executor
 import THIS.ConnectionsManager
 import THIS.Protocols
 import THIS.Templates.Text
+import THIS.Hypervisor
 
 actionCommands :: String -> [(String, String)] -> Executor -> Either String [String]
 actionCommands action pairs exe =
@@ -29,7 +30,7 @@ environment pc ph = phEnvironment ph ++ hcParams (phWhere ph) ++ pcEnvironment p
 execute :: FilePath -> String -> [(String, String)] -> YamlM ()
 execute path phase extVars = do
   chosts <- loadCommonHosts
-  pc <- loadProjectConfig path extVars chosts
+  (object, pc) <- loadProjectConfig path extVars chosts
   case lookup phase (pcPhases pc) of
     Nothing -> lift $ putStrLn $ "No such phase: " ++ phase
     Just ph -> do
@@ -37,7 +38,9 @@ execute path phase extVars = do
       liftIO $ putStrLn $ "Executing " ++ phase ++ " on " ++ hcHostname host
       case hcVM host of
         Nothing -> return ()
-        Just vm -> liftIO $ putStrLn $ "Running VM"
+        Just vm -> do
+                   liftIO $ putStrLn $ "Running VM"
+                   liftIO $ runVM object (hcParams host) vm
       manageConnections (hcParams host) $ do
           when (not $ null $ phCreateFiles ph) $ do
             send <- getSendProtocol (hcHostname host)

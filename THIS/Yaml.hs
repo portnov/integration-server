@@ -4,8 +4,10 @@ module THIS.Yaml where
 import Control.Applicative
 import Control.Monad
 import Control.Monad.Trans
+import Control.Monad.Error
 import Control.Monad.Instances
 import Control.Failure
+import Control.Exception as E
 import Data.Char
 import Data.List
 import Data.Object
@@ -186,3 +188,10 @@ loadYaml kind name = do
                         return (fullPath, merge parent yaml')
                     Right (Nothing, _) -> return (path, yaml)
 
+forceYamlM :: (Exception e) => (String -> e) -> YamlM a -> IO a
+forceYamlM efn m = do
+  x <- runErrorT m
+  case x of
+    Left err -> throw (efn err) 
+    Right val -> return val
+    
