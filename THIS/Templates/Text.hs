@@ -96,15 +96,15 @@ renderTemplate object pairs list = concatMap go list
     go (Literal str) = str
     go (Variable var def) = fromMaybe def $ lookup var pairs
     go (Lookup dict key def) =
-        case lookupYaml object pairs dict key of
+        case lookupYaml object pairs dict key def of
           Left _ -> def
           Right val -> val
 
-    lookupYaml :: StringObject -> [(String, String)] -> String -> String -> Either YamlError String
-    lookupYaml object vars dictname keyname = do
+    lookupYaml :: StringObject -> [(String, String)] -> String -> String -> String -> Either YamlError String
+    lookupYaml object vars dictname keyname def = do
       dict <- get dictname object :: Either YamlError StringObject
-      let key = fromMaybe "" $ lookup keyname vars
-      get key dict `mplus` get "$$" dict
+      let key = fromMaybe "$$" $ lookup keyname vars
+      get key dict `mplus` get "$$" dict `mplus` return def
 
 evalTemplate :: FilePath -> StringObject -> [(String, String)] -> String -> Either YamlError String
 evalTemplate path object pairs template = do
