@@ -4,18 +4,20 @@ module THIS.Types where
 import Control.Monad.Error
 import Control.Failure
 
+type Variables = [(String, String)]
+
 data ProjectConfig = ProjectConfig {
     pcDirectory :: FilePath,
     pcHosts :: [(String, HostConfig)],
     pcPhases :: [(String, Phase)],
-    pcEnvironment :: [(String, String)] }
+    pcEnvironment :: Variables }
   deriving (Eq, Show)
 
 data HostConfig = HostConfig {
      hcHostname :: String,
      hcPath :: FilePath,
      hcVM :: Maybe VMConfig,
-     hcParams :: [(String, String)] }
+     hcParams :: Variables }
   deriving (Eq, Show)
 
 data VMConfig = VMConfig {
@@ -36,7 +38,7 @@ data Phase = Phase {
     phCreateFiles :: [(FilePath, FilePath)],
     phFiles :: [(String, [FilePath])],
     phShellCommands :: [String],
-    phEnvironment :: [(String, String)] }
+    phEnvironment :: Variables }
   deriving (Eq, Show)
 
 data Executor = Executor {

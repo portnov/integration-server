@@ -1,0 +1,101 @@
+ghc -Wall --make parser-test.hs
+[1 of 5] Compiling THIS.Types       ( THIS/Types.hs, THIS/Types.o )
+
+THIS/Types.hs:74:10:
+    Warning: orphan instance: instance Failure e (Either e)
+
+THIS/Types.hs:77:10:
+    Warning: orphan instance:
+      instance Monad m => Failure YamlError (ErrorT YamlError m)
+[2 of 5] Compiling THIS.Yaml        ( THIS/Yaml.hs, THIS/Yaml.o )
+
+THIS/Yaml.hs:8:1:
+    Warning: The import of `Control.Monad.Instances' is redundant
+               except perhaps to import instances from `Control.Monad.Instances'
+             To import instances alone, use: import Control.Monad.Instances()
+
+THIS/Yaml.hs:106:77:
+    Warning: This binding for `k' shadows the existing binding
+               bound at THIS/Yaml.hs:106:15
+
+THIS/Yaml.hs:160:12:
+    Warning: This binding for `k' shadows the existing binding
+               bound at THIS/Yaml.hs:157:14
+[3 of 5] Compiling THIS.Config.Parser ( THIS/Config/Parser.hs, THIS/Config/Parser.o )
+
+THIS/Config/Parser.hs:6:1:
+    Warning: The import of `Control.Monad.Trans' is redundant
+               except perhaps to import instances from `Control.Monad.Trans'
+             To import instances alone, use: import Control.Monad.Trans()
+
+THIS/Config/Parser.hs:11:1:
+    Warning: The import of `Data.Object.Yaml' is redundant
+               except perhaps to import instances from `Data.Object.Yaml'
+             To import instances alone, use: import Data.Object.Yaml()
+
+THIS/Config/Parser.hs:12:1:
+    Warning: The import of `Text.Printf' is redundant
+               except perhaps to import instances from `Text.Printf'
+             To import instances alone, use: import Text.Printf()
+
+THIS/Config/Parser.hs:45:19:
+    Warning: This binding for `name' shadows the existing binding
+               bound at THIS/Config/Parser.hs:32:17
+
+THIS/Config/Parser.hs:46:19:
+    Warning: This binding for `name' shadows the existing binding
+               bound at THIS/Config/Parser.hs:32:17
+
+THIS/Config/Parser.hs:46:19: Warning: Defined but not used: `name'
+
+THIS/Config/Parser.hs:46:25:
+    Warning: This binding for `object' shadows the existing binding
+               bound at THIS/Config/Parser.hs:32:23
+
+THIS/Config/Parser.hs:53:7:
+    Warning: This binding for `min' shadows the existing binding
+               imported from Prelude
+
+THIS/Config/Parser.hs:54:7:
+    Warning: This binding for `max' shadows the existing binding
+               imported from Prelude
+[4 of 5] Compiling THIS.Parse       ( THIS/Parse.hs, THIS/Parse.o )
+
+THIS/Parse.hs:9:1:
+    Warning: The import of `THIS.Yaml' is redundant
+               except perhaps to import instances from `THIS.Yaml'
+             To import instances alone, use: import THIS.Yaml()
+
+THIS/Parse.hs:10:1:
+    Warning: The import of `THIS.Config.Parser' is redundant
+               except perhaps to import instances from `THIS.Config.Parser'
+             To import instances alone, use: import THIS.Config.Parser()
+
+THIS/Parse.hs:68:31:
+    Warning: Pattern match(es) are non-exhaustive
+             In a case alternative: Patterns not matched: _ : (_ : _)
+
+THIS/Parse.hs:72:47:
+    Warning: This binding for `pairs' shadows the existing binding
+               bound at THIS/Parse.hs:49:7
+
+THIS/Parse.hs:76:59:
+    Warning: Defaulting the following constraint(s) to type `Integer'
+               (Enum a0) arising from the arithmetic sequence `1 .. '
+                         at THIS/Parse.hs:76:59-63
+               (Num a0) arising from the literal `1' at THIS/Parse.hs:76:60
+               (Show a0) arising from a use of `show' at THIS/Parse.hs:76:54-57
+    In the second argument of `map', namely `[1 .. ]'
+    In the second argument of `drop', namely `(map show [1 .. ])'
+    In the second argument of `(++)', namely
+      `drop (length list) (map show [1 .. ])'
+[5 of 5] Compiling Main             ( parser-test.hs, parser-test.o )
+
+parser-test.hs:7:1:
+    Warning: The import of `THIS.Yaml' is redundant
+               except perhaps to import instances from `THIS.Yaml'
+             To import instances alone, use: import THIS.Yaml()
+
+parser-test.hs:11:1:
+    Warning: Top-level binding with no type signature: main :: IO ()
+Linking parser-test ...
