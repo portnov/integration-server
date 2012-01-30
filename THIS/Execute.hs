@@ -4,6 +4,7 @@ module THIS.Execute where
 import Control.Monad
 import Control.Monad.Error
 import Control.Monad.Trans
+import Data.Object
 import System.FilePath
 import System.FilePath.Glob
 import System.Directory
@@ -14,6 +15,7 @@ import THIS.Config.ProjectConfig
 import THIS.Config.Executor
 import THIS.ConnectionsManager
 import THIS.Protocols
+import THIS.Templates.Text
 
 actionCommands :: String -> [(String, String)] -> Executor -> Either String [String]
 actionCommands action pairs exe =
@@ -24,10 +26,10 @@ actionCommands action pairs exe =
 environment :: ProjectConfig -> Phase -> [(String, String)]
 environment pc ph = phEnvironment ph ++ hcParams (phWhere ph) ++ pcEnvironment pc
 
-execute :: FilePath -> String -> YamlM ()
-execute path phase = do
+execute :: FilePath -> String -> [(String, String)] -> YamlM ()
+execute path phase extVars = do
   chosts <- loadCommonHosts
-  pc <- loadProjectConfig path chosts
+  pc <- loadProjectConfig path extVars chosts
   case lookup phase (pcPhases pc) of
     Nothing -> lift $ putStrLn $ "No such phase: " ++ phase
     Just ph -> do
@@ -36,14 +38,20 @@ execute path phase = do
       case hcVM host of
         Nothing -> return ()
         Just vm -> liftIO $ putStrLn $ "Running VM"
-      exe <- loadExecutor (phExecutor ph)
-      let aclist = if null (phActions ph)
-                     then if null (exActions exe)
-                            then [phase]
-                            else exActions exe
-                     else phActions ph
-      liftIO $ print (hcParams host)
-      liftIO $ manageConnections (hcParams host) $ do
+      manageConnections (hcParams host) $ do
+          when (not $ null $ phCreateFiles ph) $ do
+            send <- getSendProtocol (hcHostname host)
+            lift $ forM_ (phCreateFiles ph) $ \(template, path) -> do
+                      temp <- evalTextFile (Mapping []) (phEnvironment ph) template
+                      liftIO $ putStrLn $ "Sending file: " ++ path
+                      lift $ sendFileA send temp (hcPath host </> path)
+          exe <- lift $ loadExecutor (phExecutor ph)
+          let aclist = if null (phActions ph)
+                         then if null (exActions exe)
+                                then [phase]
+                                else exActions exe
+                         else phActions ph
+          liftIO $ print (hcParams host)
           commands <- getCommandProtocol (hcHostname host)
           liftIO $ chdirA commands (hcPath host)
           forM_ aclist $ \action -> do

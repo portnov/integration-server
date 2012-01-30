@@ -7,13 +7,13 @@ host-by-environment:
   work: local
 
 nginx-conf-path:
-  production: /etc/nginx
+  production: /etc/nginx/sites-enabled/
   $$: .
 
 hosts:
   local:
     host: localhost
-    port: 2345
+    port: 22
     login: portnov
     path: /home/portnov/temp/test/
     known-hosts: /home/portnov/.ssh/known_hosts
@@ -32,6 +32,12 @@ phases:
   build:
     where: ${host-by-environment[environment]}
     actions: [all, clean]
+
+    domain: example.com
+    port: 80
+
     create-files:
-      nginx.conf: ${nginx-conf-path[target]}/nginx.conf
+      nginx.site.conf: ${nginx-conf-path[target]}/${domain}.conf
+
     executor: make
+

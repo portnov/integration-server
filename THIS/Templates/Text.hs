@@ -3,10 +3,13 @@ module THIS.Templates.Text
   ( Item (..),
     parseTemplate,
     renderTemplate,
-    evalTemplate
+    evalTemplate,
+    evalTextFile
   ) where
 
 import Control.Monad
+import Control.Monad.Error
+import Control.Monad.Trans
 import Data.Maybe
 import Data.Object
 import Data.Object.Yaml
@@ -15,6 +18,7 @@ import Text.Parsec.String
 
 import THIS.Types
 import THIS.Yaml
+import THIS.Templates
 
 data Item =
     Literal String
@@ -69,4 +73,12 @@ evalTemplate :: FilePath -> StringObject -> [(String, String)] -> String -> Eith
 evalTemplate path object pairs template = do
   list <- parseTemplate path template
   return $ renderTemplate object pairs list
+
+evalTextFile :: StringObject -> [(String, String)] -> FilePath -> YamlM FilePath
+evalTextFile object vars name = do
+  (path, template) <- readTemplate name
+  result <- ErrorT $ return $ evalTemplate path object vars template
+  tempPath <- liftIO $ tempFile
+  liftIO $ writeFile tempPath result
+  return tempPath
 

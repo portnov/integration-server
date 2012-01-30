@@ -27,13 +27,13 @@ data Protocols = Protocols {
 
 type Manager = TVar Protocols
 
-type Managed a = ReaderT Manager IO a
+type Managed m a = ReaderT Manager m a
 
-forceEither :: Either YamlError a -> IO a
+forceEither :: (Monad m) => Either YamlError a -> m a
 forceEither (Right x) = return x
 forceEither (Left e)  = fail e
 
-manageConnections :: [(String, String)] -> Managed a -> IO a
+manageConnections :: (MonadIO m) => [(String, String)] -> Managed m a -> m a
 manageConnections pairs fn = do
   cfg <- forceEither $ loadConnectionInfo pairs
   let generic = lookupDefault "protocol" "libssh2" pairs
@@ -53,7 +53,7 @@ manageConnections pairs fn = do
               freeAllProtocols
               return r) manager
 
-getCommandProtocol :: String -> Managed AnyCommandProtocol
+getCommandProtocol :: (MonadIO m) => String -> Managed m AnyCommandProtocol
 getCommandProtocol host = do
   var <- ask
   prs <- liftIO $ atomically $ readTVar var
@@ -68,7 +68,7 @@ getCommandProtocol host = do
                liftIO $ atomically $ writeTVar var p
                return new
 
-getSendProtocol :: String -> Managed AnySendProtocol
+getSendProtocol :: (MonadIO m) => String -> Managed m AnySendProtocol
 getSendProtocol host = do
   var <- ask
   prs <- liftIO $ atomically $ readTVar var
@@ -83,7 +83,7 @@ getSendProtocol host = do
                liftIO $ atomically $ writeTVar var p
                return new
 
-getReceiveProtocol :: String -> Managed AnyReceiveProtocol
+getReceiveProtocol :: (MonadIO m) => String -> Managed m AnyReceiveProtocol
 getReceiveProtocol host = do
   var <- ask
   prs <- liftIO $ atomically $ readTVar var
@@ -98,34 +98,30 @@ getReceiveProtocol host = do
                liftIO $ atomically $ writeTVar var p
                return new
 
-freeAllProtocols :: Managed ()
+freeAllProtocols :: (MonadIO m) => Managed m ()
 freeAllProtocols = do
   freeCommandProtocols
   freeSendProtocols
   freeReceiveProtocols
 
-freeCommandProtocols :: Managed ()
+freeCommandProtocols :: (MonadIO m) => Managed m ()
 freeCommandProtocols = do
   var <- ask
   prs <- liftIO $ atomically $ readTVar var
   forM_ (M.elems $ commandProtocols prs) $ \(AnyCommandProtocol p) ->
       liftIO $ disconnect p
 
-freeSendProtocols :: Managed ()
+freeSendProtocols :: (MonadIO m) => Managed m ()
 freeSendProtocols = do
   var <- ask
   prs <- liftIO $ atomically $ readTVar var
   forM_ (M.elems $ sendProtocols prs) $ \(AnySendProtocol p) ->
       liftIO $ disconnect p
 
-freeReceiveProtocols :: Managed ()
+freeReceiveProtocols :: (MonadIO m) => Managed m ()
 freeReceiveProtocols = do
   var <- ask
   prs <- liftIO $ atomically $ readTVar var
   forM_ (M.elems $ receiveProtocols prs) $ \(AnyReceiveProtocol p) ->
       liftIO $ disconnect p
-
-
-
-
 

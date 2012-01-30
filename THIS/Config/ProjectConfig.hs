@@ -90,23 +90,24 @@ convertHost (name, object) = do
 convertPhase :: FilePath -> StringObject -> [(String, String)] -> [(String, HostConfig)] -> (String, StringObject) -> Either YamlError (String, Phase)
 convertPhase path project vars hosts (name, object) = do
   pairs <- getPairs object
+  let eval = evalTemplate path project (pairs ++ vars)
   whs <- get "where" object
-  whs' <- evalTemplate path project (pairs ++ vars) whs
+  whs' <- eval whs
   whr <- case lookup whs' hosts of
            Nothing -> fail $ "Unknown host: " ++ whs'
            Just hc -> return hc
   shutdown <- getOptional "shutdown" True object
-  preexec  <- getOptional "pre-execute" [] object
+  preexec  <- mapM eval =<< getOptional "pre-execute" [] object
   executor <- get "executor" object
   actions  <- getOptional "actions" [] object
   parser   <- getOptional "parser" executor object
   newFilesT <- getPairs =<< getOptional "create-files" (Mapping []) object
-  newTs    <- mapM (evalTemplate path project (pairs ++ vars)) (map fst newFilesT)
-  newFs    <- mapM (evalTemplate path project (pairs ++ vars)) (map snd newFilesT)
+  newTs    <- mapM eval (map fst newFilesT)
+  newFs    <- mapM eval (map snd newFilesT)
   let newFiles = zip newTs newFs
   files    <- mapM convertFiles =<< getOptional "files" [] object
   shell    <- getOptional "shell" [] object
-  shell'   <- mapM (evalTemplate path project pairs) shell
+  shell'   <- mapM eval shell
   env      <- getPairs object
   return (name, Phase {
                    phWhere      = whr,
