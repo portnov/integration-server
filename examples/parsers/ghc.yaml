@@ -1,0 +1,14 @@
+
+$$:
+  result:
+    ok: 0
+    warning: Warning
+
+  groups:
+    good:
+      "^\\[.*\\] Compiling ([^ ]+)": [module]
+
+    other:
+      "^([^ ]+):(\\d+):(\\d+):$": [filename, line, column]
+      "^\\s+(\\w+):(.*)$": [group, message]
+      ".+": []

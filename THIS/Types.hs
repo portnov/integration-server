@@ -48,6 +48,25 @@ data ActionConfig = ActionConfig {
     acCommands :: [String] }
   deriving (Eq, Show)
 
+data Parser = Parser [(String, ActionParser)]
+  deriving (Eq, Show)
+
+data ActionParser = ActionParser {
+    apResultsMap :: [(String, ResultsRange)],
+    apGroups :: [(String, ResultGroup)] }
+  deriving (Eq, Show)
+
+data ResultsRange =
+    ResultsList [ResultVariant]
+  | CodesRange Int Int
+  deriving (Eq, Show)
+
+data ResultVariant = ReturnCode Int | GroupName String
+  deriving (Eq, Show)
+
+data ResultGroup = ResultGroup { rgLines :: [(String, [String])] }
+  deriving (Eq, Show)
+
 type YamlError = String
 
 type YamlM a = ErrorT YamlError IO a
