@@ -1,6 +1,7 @@
 module THIS.Protocols where
 
 import Control.Applicative
+import Control.Failure
 import Data.Object
 import Data.Object.Yaml
 import Data.Maybe
@@ -15,13 +16,13 @@ import THIS.Protocols.SSHCommands
 lookupDefault :: String -> String -> [(String, String)] -> String
 lookupDefault key def pairs = fromMaybe def $ lookup key pairs
 
-lookupForce :: String -> [(String, String)] -> Either YamlError String
+lookupForce :: String -> [(String, String)] -> Either ErrorMessage String
 lookupForce key pairs =
   case lookup key pairs of
-    Nothing -> Left $ "Key not found: " ++ key
-    Just v  -> Right v
+    Nothing -> failure $ "Key not found: " ++ key
+    Just v  -> return v
 
-loadConnectionInfo :: [(String, String)] -> Either YamlError ConnectionInfo
+loadConnectionInfo :: [(String, String)] -> Either ErrorMessage ConnectionInfo
 loadConnectionInfo pairs = ConnectionInfo
     <$> lookupForce "host" pairs
     <*> (readInt $ lookupDefault "port" "22" pairs)

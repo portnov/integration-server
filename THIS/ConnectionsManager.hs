@@ -1,14 +1,16 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE ScopedTypeVariables, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 module THIS.ConnectionsManager where
 
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Reader
 import Control.Monad.Error
+import Control.Failure
 import Control.Concurrent.STM
 import Data.Object
 import Data.Object.Yaml
 import qualified Data.Map as M
+import qualified Text.Parsec as P
 
 import THIS.Types
 import THIS.Yaml
@@ -29,11 +31,16 @@ type Manager = TVar Protocols
 
 type Managed m a = ReaderT Manager m a
 
-forceEither :: (Monad m) => Either YamlError a -> m a
-forceEither (Right x) = return x
-forceEither (Left e)  = fail e
+type MTHIS a = ReaderT Manager (ErrorT ErrorMessage IO) a
 
-manageConnections :: (MonadIO m) => [(String, String)] -> Managed m a -> m a
+instance (Monad m, Failure P.ParseError m) => Failure P.ParseError (ReaderT Manager m) where
+  failure e = lift (failure e)
+
+forceEither :: (Monad m, Failure ErrorMessage m) => Either ErrorMessage a -> m a
+forceEither (Right x) = return x
+forceEither (Left e)  = failure e
+
+manageConnections :: (MonadIO m, Failure ErrorMessage m) => [(String, String)] -> Managed m a -> m a
 manageConnections pairs fn = do
   cfg <- forceEither $ loadConnectionInfo pairs
   let generic = lookupDefault "protocol" "libssh2" pairs

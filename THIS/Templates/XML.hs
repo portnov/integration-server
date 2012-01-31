@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, StandaloneDeriving #-}
 module THIS.Templates.XML
   (XMLTemplateError (..),
    evalXMLFile
@@ -21,7 +21,7 @@ data XMLTemplateError = XMLTemplateError String
 
 instance Exception XMLTemplateError
 
-evalXMLFile :: StringObject -> [(String, String)] -> FilePath -> YamlM String
+evalXMLFile :: StringObject -> [(String, String)] -> FilePath -> THIS String
 evalXMLFile object vars name = do
   (path, tpl) <- readTemplate name
   s <- liftIO $ processXML path tpl object vars
@@ -41,6 +41,6 @@ evalXML path tpl object vars =
     processTopDownWithAttrl $ changeText go `when` isText
   where
     go t = case evalTemplate path object vars t of
-             Left err -> throw (XMLTemplateError err)
+             Left err -> throw (XMLTemplateError $ show err)
              Right x -> x
 

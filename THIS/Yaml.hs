@@ -29,12 +29,12 @@ suffixes = concatMap (\(n, ss) -> [(s, n) | s <- ss]) $
    (1000000000,          ["gb"]),
    (1000000000000,       ["tb"]) ]
 
-class (Monad m, Failure YamlError m) => Got k v m a where
+class (Monad m, Failure ErrorMessage m) => Got k v m a where
   get :: k -> Object k v -> m a
 
   getOptional :: k -> a -> Object k v -> m a
 
-instance Got String String (Either YamlError) StringObject where
+instance Got String String (Either ErrorMessage) StringObject where
   get k (Mapping pairs) =
     case lookup k pairs :: Maybe StringObject of
       Nothing -> failure $ "Key not found: " ++ k
@@ -48,23 +48,23 @@ instance Got String String (Either YamlError) StringObject where
   getOptional _ _ obj = failure $ "Expected mapping, but got: " ++ show obj
 
 
-instance Got String String (Either YamlError) String where
+instance Got String String (Either ErrorMessage) String where
   get k o = getString =<< get k o
   getOptional k d o = getString =<< getOptional k (Scalar d) o
 
-instance Got String String (Either YamlError) [String] where
+instance Got String String (Either ErrorMessage) [String] where
   get k o = mapM getString =<< get k o
   getOptional k d o = mapM getString =<< getOptional k (map Scalar d) o
 
-instance Got String String (Either YamlError) Integer where
+instance Got String String (Either ErrorMessage) Integer where
   get k o = getInteger =<< get k o
   getOptional k d o = getInteger =<< getOptional k (show d) o
 
-instance Got String String (Either YamlError) Bool where
+instance Got String String (Either ErrorMessage) Bool where
   get k o = readBool =<< get k o
   getOptional k d o = readBool =<< getOptional k (show d) o
 
-readBool :: String -> Either YamlError Bool
+readBool :: String -> Either ErrorMessage Bool
 readBool s = do
   let str = map toLower s
   if str `elem` ["true", "yes", "on", "1"]
@@ -73,21 +73,21 @@ readBool s = do
            then return False
            else failure $ "Cannot parse as boolean value: " ++ s
 
-instance Got String String (Either YamlError) Int where
+instance Got String String (Either ErrorMessage) Int where
   get k o = readInt =<< get k o
   getOptional k d o = readInt =<< getOptional k (show d) o
 
-readInt :: String -> Either YamlError Int
+readInt :: String -> Either ErrorMessage Int
 readInt s =
   case reads s of
     [(n, "")] -> return n
     _ -> failure $ "Cannot parse int: " ++ s
 
-instance Got String String (Either YamlError) [StringObject] where
+instance Got String String (Either ErrorMessage) [StringObject] where
   get k o = getSequence =<< get k o
   getOptional k d o = getSequence =<< getOptional k (Sequence d) o
 
-instance Got String String (Either YamlError) [(String, StringObject)] where
+instance Got String String (Either ErrorMessage) [(String, StringObject)] where
   get k o = do
     x <- get k o
     case x of
@@ -100,25 +100,25 @@ instance Got String String (Either YamlError) [(String, StringObject)] where
       Mapping pairs -> return pairs
       _ -> failure $ "Expected mapping, but got: " ++ show x
 
-instance Got String String (Either YamlError) [(String, String)] where
+instance Got String String (Either ErrorMessage) [(String, String)] where
   get k o = getPairs =<< get k o
   
   getOptional k d o = getPairs =<< getOptional k (Mapping [(k, Scalar v) | (k,v) <- d]) o
 
-getSequence :: StringObject -> Either YamlError [StringObject]
+getSequence :: StringObject -> Either ErrorMessage [StringObject]
 getSequence (Sequence list) = return list
 getSequence (Scalar x) = return [Scalar x]
 getSequence x = failure $ "Expected sequence, but got: " ++ show x
 
-getMapping :: StringObject -> Either YamlError [(String, StringObject)]
+getMapping :: StringObject -> Either ErrorMessage [(String, StringObject)]
 getMapping (Mapping pairs) = return pairs
 getMapping x = failure $ "Expected mapping, but got: " ++ show x
 
-getString :: StringObject -> Either YamlError String
+getString :: StringObject -> Either ErrorMessage String
 getString (Scalar x) = return x
 getString y = failure $ "Expected scalar, but got: " ++ show y
 
-getInteger :: String -> Either YamlError Integer
+getInteger :: String -> Either ErrorMessage Integer
 getInteger s =
   let (ds,suf) = span isDigit s
   in  if null ds
@@ -127,18 +127,18 @@ getInteger s =
                Nothing -> failure $ "Unknown suffix: " ++ suf
                Just c  -> return $ read ds * c
 
-getPairs :: StringObject -> Either YamlError [(String, String)]
+getPairs :: StringObject -> Either ErrorMessage [(String, String)]
 getPairs object = concatMap go <$> getMapping object
   where
     go (name, Scalar val) = [(name, val)]
     go (_,_) = []
 
-getInherit :: StringObject -> Either YamlError (Maybe String, StringObject)
+getInherit :: StringObject -> Either ErrorMessage (Maybe String, StringObject)
 getInherit x@(Mapping ps) = case lookupRemove "inherit" ps of
-                              (Nothing, _) -> Right (Nothing, x)
-                              (Just (Scalar y), s) -> Right (Just y, Mapping s)
-                              (Just y, _) -> Left $ "Inherit: should be Scalar, but got " ++ show y
-getInherit x            = Right (Nothing, x)
+                              (Nothing, _) -> return (Nothing, x)
+                              (Just (Scalar y), s) -> return (Just y, Mapping s)
+                              (Just y, _) -> failure $ "Inherit: should be Scalar, but got " ++ show y
+getInherit x            = return (Nothing, x)
 
 merge :: StringObject -> StringObject -> StringObject
 merge (Mapping ps1) (Mapping ps2) = Mapping $ mergeMap ps1 ps2
@@ -161,7 +161,7 @@ lookupRemove k pairs = go [] k pairs
       | k == k' = (Just v, acc ++ other)
       | otherwise = go (acc ++ [(k',v)]) k other
 
-loadYaml :: String -> String -> YamlM (FilePath, StringObject)
+loadYaml :: String -> String -> THIS (FilePath, StringObject)
 loadYaml kind name = do
   let yamlName = if ".yaml" `isSuffixOf` name
                    then name
@@ -188,10 +188,11 @@ loadYaml kind name = do
                         return (fullPath, merge parent yaml')
                     Right (Nothing, _) -> return (path, yaml)
 
-forceYamlM :: (Exception e) => (String -> e) -> YamlM a -> IO a
-forceYamlM efn m = do
+forceTHIS :: (Exception e) => (String -> e) -> THIS a -> IO a
+forceTHIS efn m = do
   x <- runErrorT m
   case x of
-    Left err -> throw (efn err) 
+    Left (Message err) -> throw (efn err) 
+    Left (YamlError e) -> throw (efn $ show e)
     Right val -> return val
     

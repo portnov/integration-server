@@ -6,6 +6,7 @@ module THIS.Parse
 
 import Control.Monad
 import Control.Monad.State as St
+import Control.Failure
 import Data.Maybe
 import Data.List
 import Text.Regex.PCRE
@@ -116,10 +117,10 @@ groupName pr =
     Just group -> group
     Nothing    -> prGroupName pr
 
-runParser :: Parser -> String -> (Int, [String]) -> Either YamlError (String, [ParserResult])
+runParser :: Parser -> String -> (Int, [String]) -> Either ErrorMessage (String, [ParserResult])
 runParser (Parser parser) action (code, output) =
   case lookup action parser `mplus` lookup "$$" parser of
-    Nothing -> Left $ "Action is not supported by parser: " ++ action
+    Nothing -> failure $ "Action is not supported by parser: " ++ action
     Just ap -> let pre = lookupCode code (apResultsMap ap)
                    results = parse (apGroups ap) output
                    groups  = map groupName results

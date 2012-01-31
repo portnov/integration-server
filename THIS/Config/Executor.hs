@@ -14,13 +14,13 @@ import THIS.Types
 import THIS.Yaml
 import THIS.Templates.Text
 
-loadExecutor :: FilePath -> YamlM (FilePath, Executor)
+loadExecutor :: FilePath -> THIS (FilePath, Executor)
 loadExecutor name = do
   (path, object) <- loadYaml "executors" name
-  r <- ErrorT $ return $ convertExecutor object
+  r <- liftEither $ convertExecutor object
   return (path, r)
 
-convertExecutor :: StringObject -> Either YamlError Executor
+convertExecutor :: StringObject -> Either ErrorMessage Executor
 convertExecutor object = do
   aclist <- getOptional "actions" [] object
   acs <- concat <$> (mapM convertAction =<< getMapping object)
@@ -28,10 +28,10 @@ convertExecutor object = do
              exActions = aclist,
              exConfigs = acs }
 
-convertAction :: (String, StringObject) -> Either YamlError [(String, ActionConfig)]
+convertAction :: (String, StringObject) -> Either ErrorMessage [(String, ActionConfig)]
 convertAction ("actions", _) = return []
 convertAction (name, object) = do
-  cmds <- get "commands" object :: Either YamlError [String]
+  cmds <- get "commands" object :: Either ErrorMessage [String]
   return [(name, ActionConfig {
                   acCommands = cmds } )]
 

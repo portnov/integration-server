@@ -17,9 +17,9 @@ import THIS.Database.Entities
 toBS :: String -> B.ByteString
 toBS s = B.pack $ map (fromIntegral . ord) s
 
-runDB :: DBConfig -> DB a -> IO a
+runDB :: (MonadIO m) => DBConfig -> DB a -> m a
 runDB dbc db =
-  withPostgresqlConn (toBS $ show dbc) $ runSqlConn $ db
+  liftIO $ withPostgresqlConn (toBS $ show dbc) $ runSqlConn $ db
 
 check :: (Show v, PersistEntity v, PersistStore b m, PersistUnique b m) => v -> b m (Key b v)
 check v = do

@@ -18,7 +18,7 @@ tempFile = do
   r <- replicateM 5 $ randomRIO ('0', '9')
   return $ "/tmp/this" ++ r
 
-readTemplate :: String -> YamlM (FilePath, String)
+readTemplate :: String -> THIS (FilePath, String)
 readTemplate name = do
   home <- liftIO $ getEnv "HOME"
   let homePath = home </> ".config" </> "this" </> "templates" </> name

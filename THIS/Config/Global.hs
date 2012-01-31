@@ -15,7 +15,7 @@ import System.Directory
 import THIS.Types
 import THIS.Yaml
 
-loadGlobalConfig :: YamlM GlobalConfig
+loadGlobalConfig :: THIS GlobalConfig
 loadGlobalConfig = do
   home <- liftIO $ getEnv "HOME"
   let homePath = home </> ".config" </> "this" </> "config.yaml"
@@ -30,16 +30,16 @@ loadGlobalConfig = do
                    else failure $ "Global config file not found neither in /etc nor ~: config.yaml"
   x <- liftIO $ (decodeFile path :: IO (Either ParseException StringObject))
   case x of
-    Left err -> failure (show err)
-    Right object -> ErrorT $ return $ convertConfig object
+    Left err -> failure err
+    Right object -> liftEither $ convertConfig object
 
-convertConfig :: StringObject -> Either YamlError GlobalConfig
+convertConfig :: StringObject -> Either ErrorMessage GlobalConfig
 convertConfig object =
   GlobalConfig
     <$> (convertDBC =<< get "database" object)
     <*> getOptional "sendmail" "sendmail -t" object
 
-convertDBC :: StringObject -> Either YamlError DBConfig
+convertDBC :: StringObject -> Either ErrorMessage DBConfig
 convertDBC object = 
   DBConfig
     <$> getOptional "host" "" object

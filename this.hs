@@ -53,9 +53,9 @@ main = do
          x <- runErrorT $ worker project phase (getVars opts)
          case x of
            Right _ -> putStrLn "Done."
-           Left err -> putStrLn $ "Error: " ++ err
+           Left err -> putStrLn $ "Error: " ++ show err
 
-worker :: String -> String -> Variables -> YamlM ()
+worker :: String -> String -> Variables -> THIS ()
 worker project phase vars = do
   gc <- loadGlobalConfig
   execute gc project phase vars

@@ -14,21 +14,21 @@ import Text.Printf
 import THIS.Types
 import THIS.Yaml
 
-loadParser :: FilePath -> YamlM Parser
+loadParser :: FilePath -> THIS Parser
 loadParser name = do
   (_, object) <- loadYaml "parsers" name
-  ErrorT (return $ convertParser object)
+  liftEither $ convertParser object
 
-convertParser :: StringObject -> Either YamlError Parser
+convertParser :: StringObject -> Either ErrorMessage Parser
 convertParser object = Parser <$> (mapM convertAction =<< getMapping object)
 
-convertAction :: (String, StringObject) -> Either YamlError (String, ActionParser)
+convertAction :: (String, StringObject) -> Either ErrorMessage (String, ActionParser)
 convertAction (name, object) = do
   results <- mapM convertResults =<< get "result" object
   groups <- mapM convertGroup =<< get "groups" object
   return (name, ActionParser results groups)
 
-convertResults :: (String, StringObject) -> Either YamlError (String, ResultsRange)
+convertResults :: (String, StringObject) -> Either ErrorMessage (String, ResultsRange)
 convertResults (name, object) = do
     range <- case object of
                   Scalar s -> if all isDigit s
@@ -54,12 +54,12 @@ convertResults (name, object) = do
       max <- lookup "max" pairs
       return $ CodesRange (read min) (read max)
 
-convertGroup :: (String, StringObject) -> Either YamlError (String, ResultGroup)
+convertGroup :: (String, StringObject) -> Either ErrorMessage (String, ResultGroup)
 convertGroup (name, object) = do
   group <- mapM convertLine =<< getMapping object
   return (name, ResultGroup group)
 
-convertLine :: (String, StringObject) -> Either YamlError (String, [String])
+convertLine :: (String, StringObject) -> Either ErrorMessage (String, [String])
 convertLine (regex, object) = do
   captures <- mapM getString =<< getSequence object
   return (regex, captures)

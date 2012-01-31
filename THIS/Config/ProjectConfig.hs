@@ -19,14 +19,14 @@ import THIS.Templates.Text
 
 import Debug.Trace
 
-loadHost :: FilePath -> YamlM (String, HostConfig)
+loadHost :: FilePath -> THIS (String, HostConfig)
 loadHost path = do
   x <- liftIO (decodeFile path :: IO (Either ParseException StringObject))
   case x of
     Left err -> failure (show err)
-    Right object -> ErrorT (return $ convertHost ("", object))
+    Right object -> liftEither $ convertHost ("", object)
 
-loadCommonHosts :: YamlM [(String, HostConfig)]
+loadCommonHosts :: THIS [(String, HostConfig)]
 loadCommonHosts = do
   home <- liftIO $ getEnv "HOME"
   let homeMask = home </> ".config" </> "this" </> "hosts" </> "*.yaml"
@@ -38,13 +38,13 @@ loadCommonHosts = do
       host <- loadHost path
       return (name, snd host)
 
-loadProjectConfig :: String -> [(String, String)] -> [(String, HostConfig)] -> YamlM (FilePath, StringObject, ProjectConfig)
+loadProjectConfig :: String -> [(String, String)] -> [(String, HostConfig)] -> THIS (FilePath, StringObject, ProjectConfig)
 loadProjectConfig name vars hosts = do
   (path, object) <- loadYaml "projects" name
   pc <- ErrorT $ return $ convertProject path vars hosts object
   return (path, object, pc)
 
-convertProject :: FilePath -> [(String, String)] -> [(String, HostConfig)] -> StringObject -> Either YamlError ProjectConfig
+convertProject :: FilePath -> [(String, String)] -> [(String, HostConfig)] -> StringObject -> Either ErrorMessage ProjectConfig
 convertProject path vars commonHosts object = do
   dir <- get "directory" object
   let this = HostConfig {
@@ -66,12 +66,12 @@ convertProject path vars commonHosts object = do
              pcPhases = phases,
              pcEnvironment = env }
 
-convertVar :: (String, StringObject) -> Either YamlError (String, String)
+convertVar :: (String, StringObject) -> Either ErrorMessage (String, String)
 convertVar (name, object) = do
   val <- getString object
   return (name, val)
 
-convertHost :: (String, StringObject) -> Either YamlError (String, HostConfig)
+convertHost :: (String, StringObject) -> Either ErrorMessage (String, HostConfig)
 convertHost (name, object) = do
   ht <- getOptional "type" "host" object
   hostname <- get "host" object
@@ -92,10 +92,10 @@ convertHost (name, object) = do
              hcVM = mbvm,
              hcParams = params } )
 
-convertPhase :: FilePath -> StringObject -> [(String, String)] -> [(String, HostConfig)] -> (String, StringObject) -> Either YamlError (String, Phase)
+convertPhase :: FilePath -> StringObject -> [(String, String)] -> [(String, HostConfig)] -> (String, StringObject) -> Either ErrorMessage (String, Phase)
 convertPhase path project vars hosts (name, object) = do
   pairs <- getPairs object
-  let eval = evalTemplate path project (pairs ++ vars)
+  let eval x = liftError ParsecError $ evalTemplate path project (pairs ++ vars) x
   whs <- get "where" object
   whs' <- eval whs
   whr <- case lookup whs' hosts of
@@ -126,7 +126,7 @@ convertPhase path project vars hosts (name, object) = do
                    phShellCommands = shell',
                    phEnvironment = env } )
 
-convertFiles :: (String, StringObject) -> Either YamlError (String, [FilePath])
+convertFiles :: (String, StringObject) -> Either ErrorMessage (String, [FilePath])
 convertFiles (name, object) = do
   files <- mapM getString =<< getSequence object
   return (name, files)

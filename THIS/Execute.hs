@@ -32,7 +32,7 @@ actionCommands action pairs exe =
 environment :: ProjectConfig -> Phase -> [(String, String)]
 environment pc ph = phEnvironment ph ++ hcParams (phWhere ph) ++ pcEnvironment pc
 
-execute :: GlobalConfig -> String -> String -> [(String, String)] -> YamlM ()
+execute :: GlobalConfig -> String -> String -> [(String, String)] -> THIS ()
 execute gc projectName phase extVars = do
   chosts <- loadCommonHosts
   (ppath, object, pc) <- loadProjectConfig projectName extVars chosts
@@ -75,13 +75,13 @@ execute gc projectName phase extVars = do
                   Right cmds -> do
                                 let env = ("action", action): phEnvironment ph
                                 commands <- case mapM (evalTemplate exePath object env) cmds of
-                                              Left err -> lift $ failure err
+                                              Left err -> failure err :: MTHIS [String]
                                               Right x -> return x
                                 liftIO $ putStrLn $ "Executing: " ++ show commands
                                 (ec, out) <- liftIO $ runCommandsA cmdP commands
                                 liftIO $ putStrLn $ "Output: " ++ show out
                                 case runParser parser action (ec, out) of
-                                  Left err -> liftIO $ putStrLn $ "Parser error: " ++ err
+                                  Left err -> liftIO $ putStrLn $ "Parser error: " ++ show err
                                   Right (rr, results) -> liftIO $ do
                                       forM_ results $ \result -> do
                                         putStrLn $ "Group: " ++ prGroupName result

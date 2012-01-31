@@ -1,8 +1,10 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, RecordWildCards #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, RecordWildCards, DeriveDataTypeable, FlexibleContexts, TypeSynonymInstances #-}
 module THIS.Types where
 
-import Control.Monad.Error
+import Control.Monad.Error as E
 import Control.Failure
+import Data.Object.Yaml
+import qualified Text.Parsec as P
 
 type Variables = [(String, String)]
 
@@ -102,13 +104,53 @@ data ResultVariant = ReturnCode Int | GroupName String
 data ResultGroup = ResultGroup { rgLines :: [(String, [String])] }
   deriving (Eq, Show)
 
-type YamlError = String
+data ErrorMessage =
+    YamlError ParseException
+  | ParsecError P.ParseError
+  | Message String
+  | NoMessage
+  deriving (Show)
 
-type YamlM a = ErrorT YamlError IO a
+instance E.Error ErrorMessage where
+  noMsg = NoMessage
+  strMsg = Message
+
+type THIS a = ErrorT ErrorMessage IO a
+
+liftEither :: Either ErrorMessage a -> THIS a
+liftEither e = ErrorT (return e)
+
+liftEitherWith :: (e -> ErrorMessage) -> Either e a -> THIS a
+liftEitherWith fn x =
+  case x of
+    Left e  -> ErrorT (return $ Left $ fn e)
+    Right v -> ErrorT (return $ Right v)
+
+liftError :: (e -> e') -> Either e a -> Either e' a
+liftError fn (Left e)  = Left (fn e)
+liftError _  (Right v) = Right v
 
 instance Failure e (Either e) where
   failure e = Left e
 
-instance (Monad m) => Failure YamlError (ErrorT YamlError m) where
-  failure e = fail e
+instance Failure String (Either ErrorMessage) where
+  failure e = Left (Message e)
+
+instance Failure ParseException (Either ErrorMessage) where
+  failure e = Left (YamlError e)
+
+instance Failure P.ParseError (Either ErrorMessage) where
+  failure e = Left (ParsecError e)
+
+instance (Monad m) => Failure ErrorMessage (ErrorT ErrorMessage m) where
+  failure e = ErrorT (return $ Left e)
+
+instance (Monad m) => Failure String (ErrorT ErrorMessage m) where
+  failure e = ErrorT (return $ Left $ Message e)
+
+instance (Monad m) => Failure ParseException (ErrorT ErrorMessage m) where
+  failure e = ErrorT (return $ Left $ YamlError e)
+
+instance (Monad m) => Failure P.ParseError (ErrorT ErrorMessage m) where
+  failure e = ErrorT (return $ Left $ ParsecError e)
 

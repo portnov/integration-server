@@ -10,6 +10,7 @@ module THIS.Templates.Text
 import Control.Monad
 import Control.Monad.Error
 import Control.Monad.Trans
+import Control.Failure hiding (try)
 import Data.Maybe
 import Data.Object
 import Data.Object.Yaml
@@ -82,13 +83,13 @@ pDollarEnd = do
 pTemplate :: P.Parser [Item]
 pTemplate = many $ try pVariable <|> try pPlain <|> try pTwoDollars <|> try pDollarChar <|> pDollarEnd
 
-parseTemplate :: FilePath -> String -> Either YamlError [Item]
+parseTemplate :: FilePath -> String -> Either ParseError [Item]
 parseTemplate path str =
   if '$' `elem` str
     then case parse pTemplate path str of
-           Left err -> Left (show err)
-           Right tpl -> Right tpl
-    else Right [Literal str]
+           Left err -> failure err
+           Right tpl -> return tpl
+    else return [Literal str]
 
 renderTemplate :: StringObject -> [(String, String)] -> [Item] -> String
 renderTemplate object pairs list = concatMap go list
@@ -100,21 +101,21 @@ renderTemplate object pairs list = concatMap go list
           Left _ -> def
           Right val -> val
 
-    lookupYaml :: StringObject -> [(String, String)] -> String -> String -> String -> Either YamlError String
+    lookupYaml :: StringObject -> [(String, String)] -> String -> String -> String -> Either ErrorMessage String
     lookupYaml object vars dictname keyname def = do
-      dict <- get dictname object :: Either YamlError StringObject
+      dict <- get dictname object :: Either ErrorMessage StringObject
       let key = fromMaybe "$$" $ lookup keyname vars
       get key dict `mplus` get "$$" dict `mplus` return def
 
-evalTemplate :: FilePath -> StringObject -> [(String, String)] -> String -> Either YamlError String
+evalTemplate :: FilePath -> StringObject -> [(String, String)] -> String -> Either ParseError String
 evalTemplate path object pairs template = do
   list <- parseTemplate path template
   return $ renderTemplate object pairs list
 
-evalTextFile :: StringObject -> [(String, String)] -> FilePath -> YamlM FilePath
+evalTextFile :: StringObject -> [(String, String)] -> FilePath -> THIS FilePath
 evalTextFile object vars name = do
   (path, template) <- readTemplate name
-  result <- ErrorT $ return $ evalTemplate path object vars template
+  result <- liftEitherWith ParsecError $ evalTemplate path object vars template
   tempPath <- liftIO $ tempFile
   liftIO $ writeFile tempPath result
   return tempPath

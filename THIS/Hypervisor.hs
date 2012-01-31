@@ -37,6 +37,6 @@ runVM object vars vm =
               else createDomain dom >> return ()
           st -> fail $ "Don't know what to do with virtual domain " ++ vmName vm ++ " in state " ++ show st
       Nothing -> do
-        xml <- forceYamlM XMLTemplateError $ evalXMLFile object vars (vmTemplatePath vm)
+        xml <- forceTHIS XMLTemplateError $ evalXMLFile object vars (vmTemplatePath vm)
         createDomainXML conn xml []
         return ()
