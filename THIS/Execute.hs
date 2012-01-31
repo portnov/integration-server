@@ -88,7 +88,7 @@ execute gc projectName phase extVars = do
                                         forM_ (prParams result) $ \(key, value) ->
                                           putStrLn $ "  " ++ key ++ ": " ++ value
                                         forM_ (prOtherLines result) $ \l ->
-                                          liftIO $ putStrLn l
+                                          putStrLn l
                                         putStrLn ""
                                       putStrLn $ "Result: " ++ rr
       case hcVM host of
