@@ -3,4 +3,5 @@
 *.swp
 parser-test
 this
+this-install-db
 dist/
