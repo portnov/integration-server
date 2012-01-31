@@ -7,15 +7,14 @@ import Database.Persist.TH
 import Data.Text
 
 import THIS.Types
-
-data Role = Admin | View
-  deriving (Eq, Show, Read)
+import THIS.Database.Types
 
 derivePersistField "Role"
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persist|
 Group
   title Text
+  UniqueTitle title
 
 User
   login String
@@ -23,6 +22,7 @@ User
   group GroupId
   email String
   fullName Text
+  UniqueLogin login
 
 Project
   slug String
@@ -67,3 +67,4 @@ RightsSet
   group GroupId
   role Role
 |]
+

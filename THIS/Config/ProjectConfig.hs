@@ -52,6 +52,7 @@ convertProject path vars commonHosts object = do
                hcPath     = dir,
                hcVM       = Nothing,
                hcParams   = [("host", "localhost")] }
+  title <- getOptional "title" (takeFileName path) object
   owner <- getOptional "owner" "admin" object
   hosts <- mapM convertHost =<< get "hosts" object
   let allHosts = [("this", this)] ++ commonHosts ++ hosts
@@ -59,6 +60,7 @@ convertProject path vars commonHosts object = do
   env <- getPairs object
   return $ ProjectConfig {
              pcDirectory = dir,
+             pcTitle = title,
              pcOwner = owner,
              pcHosts = allHosts,
              pcPhases = phases,
