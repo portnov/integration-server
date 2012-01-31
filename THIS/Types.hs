@@ -8,6 +8,7 @@ type Variables = [(String, String)]
 
 data ProjectConfig = ProjectConfig {
     pcDirectory :: FilePath,
+    pcOwner :: String,
     pcHosts :: [(String, HostConfig)],
     pcPhases :: [(String, Phase)],
     pcEnvironment :: Variables }
