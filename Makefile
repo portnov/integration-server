@@ -12,6 +12,6 @@ this: this.hs THIS/*.hs THIS/*/*.hs
 	$(GHC) $<
 
 clean:
-	rm -f parser-test
+	rm -f parser-test this this-install-db
 	find . -name \*.o -delete
 	find . -name \*.hi -delete

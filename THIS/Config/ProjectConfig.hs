@@ -38,11 +38,11 @@ loadCommonHosts = do
       host <- loadHost path
       return (name, snd host)
 
-loadProjectConfig :: String -> [(String, String)] -> [(String, HostConfig)] -> YamlM (StringObject, ProjectConfig)
+loadProjectConfig :: String -> [(String, String)] -> [(String, HostConfig)] -> YamlM (FilePath, StringObject, ProjectConfig)
 loadProjectConfig name vars hosts = do
   (path, object) <- loadYaml "projects" name
   pc <- ErrorT $ return $ convertProject path vars hosts object
-  return (object, pc)
+  return (path, object, pc)
 
 convertProject :: FilePath -> [(String, String)] -> [(String, HostConfig)] -> StringObject -> Either YamlError ProjectConfig
 convertProject path vars commonHosts object = do

@@ -2,12 +2,22 @@
 module THIS.Database.Util where
 
 import Database.Persist
+import Database.Persist.Postgresql
+import qualified Data.ByteString as B
 import qualified Data.Text as Text
 import Data.Text (Text)
+import Data.Char
 
 import THIS.Types
 import THIS.Database.Types
 import THIS.Database.Entities
+
+toBS :: String -> B.ByteString
+toBS s = B.pack $ map (fromIntegral . ord) s
+
+runDB :: DBConfig -> DB a -> IO a
+runDB dbc db =
+  withPostgresqlConn (toBS $ show dbc) $ runSqlConn $ db
 
 check :: (PersistEntity v, PersistStore b m, PersistUnique b m) => v -> b m (Key b v)
 check v = do

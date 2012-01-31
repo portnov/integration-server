@@ -7,6 +7,7 @@ import System.Console.GetOpt
 
 import THIS.Types
 import THIS.Yaml
+import THIS.Config.Global
 import THIS.Config.Parser
 import THIS.Execute
 
@@ -49,8 +50,13 @@ main = do
   if Help `elem` opts
     then putStrLn usage
     else do
-         x <- runErrorT $ execute project phase (getVars opts)
+         x <- runErrorT $ worker project phase (getVars opts)
          case x of
            Right _ -> putStrLn "Done."
            Left err -> putStrLn $ "Error: " ++ err
+
+worker :: String -> String -> Variables -> YamlM ()
+worker project phase vars = do
+  gc <- loadGlobalConfig
+  execute gc project phase vars
 

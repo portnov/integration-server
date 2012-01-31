@@ -20,6 +20,8 @@ import THIS.Protocols
 import THIS.Templates.Text
 import THIS.Hypervisor
 import THIS.Parse
+import THIS.Database.Types
+import THIS.Database.Util
 
 actionCommands :: String -> [(String, String)] -> Executor -> Either String [String]
 actionCommands action pairs exe =
@@ -30,10 +32,13 @@ actionCommands action pairs exe =
 environment :: ProjectConfig -> Phase -> [(String, String)]
 environment pc ph = phEnvironment ph ++ hcParams (phWhere ph) ++ pcEnvironment pc
 
-execute :: FilePath -> String -> [(String, String)] -> YamlM ()
-execute path phase extVars = do
+execute :: GlobalConfig -> String -> String -> [(String, String)] -> YamlM ()
+execute gc projectName phase extVars = do
   chosts <- loadCommonHosts
-  (object, pc) <- loadProjectConfig path extVars chosts
+  (ppath, object, pc) <- loadProjectConfig projectName extVars chosts
+  let dbc = gcDatabase gc
+  pid <- liftIO $ runDB dbc $ checkProject ppath projectName pc
+  liftIO $ putStrLn $ "Project ID: " ++ show pid
   case lookup phase (pcPhases pc) of
     Nothing -> lift $ putStrLn $ "No such phase: " ++ phase
     Just ph -> do

@@ -47,3 +47,4 @@ convertDBC object =
     <*> getOptional "database" "thin" object
     <*> getOptional "user" "thin" object
     <*> getOptional "password" "" object
+
