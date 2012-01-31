@@ -1,10 +1,41 @@
-{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, RecordWildCards #-}
 module THIS.Types where
 
 import Control.Monad.Error
 import Control.Failure
 
 type Variables = [(String, String)]
+
+data GlobalConfig = GlobalConfig {
+    gcDatabase :: DBConfig,
+    gcSendmail :: String }
+  deriving (Eq, Show)
+
+data DBConfig = DBConfig {
+    dbcHost :: String,
+    dbcPort :: Int,
+    dbcDatabase :: String,
+    dbcUser :: String,
+    dbcPassword :: String }
+  deriving (Eq)
+
+instance Show DBConfig where
+  show (DBConfig {..}) = host ++ port ++ db ++ user ++ psw
+    where
+      host | null dbcHost = ""
+           | otherwise    = "host=" ++ dbcHost
+
+      port | dbcPort == 0 = ""
+           | otherwise    = "port=" ++ show dbcPort
+
+      db | null dbcDatabase = ""
+         | otherwise        = "dbname=" ++ dbcDatabase
+
+      user | null dbcUser = ""
+           | otherwise    = "user=" ++ dbcUser
+
+      psw | null dbcPassword = ""
+          | otherwise        = "password=" ++ dbcPassword
 
 data ProjectConfig = ProjectConfig {
     pcDirectory :: FilePath,
