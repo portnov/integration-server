@@ -78,9 +78,9 @@ convertHost (name, object) = do
             "host" -> return Nothing
             "vm" -> Just <$> (VMConfig
                       <$> getOptional "hypervisor" "qemu:///system" object
-                      <*> get "empty" object
+                      <*> getOptional "empty" False object
                       <*> get "template" object
-                      <*> get "name" object
+                      <*> getOptional "name" hostname object
                       <*> getOptional "snapshot" "" object)
             _ -> failure $ "Unknown host type: " ++ ht
   params <- getPairs object
