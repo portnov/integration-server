@@ -1,7 +1,7 @@
 
 module THIS.Database.Types where
 
-import Database.Persist.GenericSql
+import Database.Persist.Postgresql
 
 type DB a = SqlPersist IO a
 

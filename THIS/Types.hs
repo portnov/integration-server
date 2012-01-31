@@ -22,7 +22,8 @@ data DBConfig = DBConfig {
   deriving (Eq)
 
 instance Show DBConfig where
-  show (DBConfig {..}) = host ++ port ++ db ++ user ++ psw
+  show (DBConfig {..}) =
+      unwords [host, port, db, user, psw]
     where
       host | null dbcHost = ""
            | otherwise    = "host=" ++ dbcHost

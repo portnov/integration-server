@@ -18,12 +18,12 @@ toBS :: String -> B.ByteString
 toBS s = B.pack $ map (fromIntegral . ord) s
 
 runDB :: (MonadIO m) => DBConfig -> DB a -> m a
-runDB dbc db =
+runDB dbc db = do
+  liftIO $ print dbc
   liftIO $ withPostgresqlConn (toBS $ show dbc) $ runSqlConn $ db
 
-check :: (Show v, PersistEntity v, PersistStore b m, PersistUnique b m) => v -> b m (Key b v)
+check :: (Show v, PersistEntity v) => v -> DB (Key SqlPersist v)
 check v = do
-  liftIO $ print v
   r <- insertBy v
   case r of
     Left e -> return (entityKey e)
@@ -31,8 +31,8 @@ check v = do
 
 checkGroup :: String -> DB GroupId
 checkGroup name = do
-  let group = Group {
-                groupTitle = Text.pack name }
+  let group = Group (Text.pack name)
+  liftIO $ putStrLn $ "checking: " ++ show group
   check group
 
 checkUser :: String -> String -> DB UserId
@@ -44,6 +44,7 @@ checkUser group name = do
                userGroup = gid,
                userEmail = "",
                userFullName = Text.pack name }
+  liftIO $ putStrLn $ "checking: " ++ show user
   check user
 
 checkProject :: FilePath -> String -> ProjectConfig -> DB ProjectId
@@ -54,5 +55,6 @@ checkProject path slug pc = do
                   projectTitle = Text.pack $ pcTitle pc,
                   projectOwner = ownerId,
                   projectFilePath = Text.pack path }
+  liftIO $ putStrLn $ "checking: " ++ show project
   check project
 

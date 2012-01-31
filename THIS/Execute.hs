@@ -1,4 +1,4 @@
-
+{-# LANGUAGE OverloadedStrings #-}
 module THIS.Execute where
 
 import Control.Monad
@@ -20,8 +20,9 @@ import THIS.Protocols
 import THIS.Templates.Text
 import THIS.Hypervisor
 import THIS.Parse
+import qualified THIS.Database.Entities as E
 import THIS.Database.Types
-import THIS.Database.Util
+import THIS.Database.Util as U
 
 actionCommands :: String -> [(String, String)] -> Executor -> Either String [String]
 actionCommands action pairs exe =
@@ -37,7 +38,7 @@ execute gc projectName phase extVars = do
   chosts <- loadCommonHosts
   (ppath, object, pc) <- loadProjectConfig projectName extVars chosts
   let dbc = gcDatabase gc
-  pid <- liftIO $ runDB dbc $ checkProject ppath projectName pc
+  pid <- U.runDB dbc $ U.checkProject ppath projectName pc
   liftIO $ putStrLn $ "Project ID: " ++ show pid
   case lookup phase (pcPhases pc) of
     Nothing -> lift $ putStrLn $ "No such phase: " ++ phase
