@@ -1,6 +1,8 @@
 {-# LANGUAGE TemplateHaskell, QuasiQuotes, EmptyDataDecls, TypeFamilies, FlexibleContexts, GADTs, OverloadedStrings #-}
 module THIS.Database.Util where
 
+import Control.Monad
+import Control.Monad.Trans
 import Database.Persist
 import Database.Persist.Postgresql
 import qualified Data.ByteString as B
@@ -19,8 +21,9 @@ runDB :: DBConfig -> DB a -> IO a
 runDB dbc db =
   withPostgresqlConn (toBS $ show dbc) $ runSqlConn $ db
 
-check :: (PersistEntity v, PersistStore b m, PersistUnique b m) => v -> b m (Key b v)
+check :: (Show v, PersistEntity v, PersistStore b m, PersistUnique b m) => v -> b m (Key b v)
 check v = do
+  liftIO $ print v
   r <- insertBy v
   case r of
     Left e -> return (entityKey e)
