@@ -20,9 +20,7 @@ import THIS.Protocols
 import THIS.Templates.Text
 import THIS.Hypervisor
 import THIS.Parse
-import qualified THIS.Database.Entities as E
-import THIS.Database.Types
-import THIS.Database.Util as U
+import THIS.Database
 
 actionCommands :: String -> [(String, String)] -> Executor -> Either String [String]
 actionCommands action pairs exe =
@@ -38,7 +36,7 @@ execute gc projectName phase extVars = do
   chosts <- loadCommonHosts
   (ppath, object, pc) <- loadProjectConfig projectName extVars chosts
   let dbc = gcDatabase gc
-  pid <- U.runDB dbc $ U.checkProject ppath projectName pc
+  pid <- runDB dbc $ checkProject ppath projectName pc
   liftIO $ putStrLn $ "Project ID: " ++ show pid
   case lookup phase (pcPhases pc) of
     Nothing -> lift $ putStrLn $ "No such phase: " ++ phase
@@ -74,6 +72,7 @@ execute gc projectName phase extVars = do
                 case actionCommands action (environment pc ph) exe of
                   Left err -> liftIO $ putStrLn $ "Error in command for action " ++ action ++ ": " ++ err
                   Right cmds -> do
+                                arid <- runDB dbc $ startAction pid phase action
                                 let env = ("action", action): phEnvironment ph
                                 commands <- case mapM (evalTemplate exePath object env) cmds of
                                               Left err -> failure err :: MTHIS [String]
@@ -81,17 +80,15 @@ execute gc projectName phase extVars = do
                                 liftIO $ putStrLn $ "Executing: " ++ show commands
                                 (ec, out) <- liftIO $ runCommandsA cmdP commands
                                 liftIO $ putStrLn $ "Output: " ++ show out
-                                case runParser parser action (ec, out) of
-                                  Left err -> liftIO $ putStrLn $ "Parser error: " ++ show err
-                                  Right (rr, results) -> liftIO $ do
-                                      forM_ results $ \result -> do
-                                        putStrLn $ "Group: " ++ prGroupName result
-                                        forM_ (prParams result) $ \(key, value) ->
-                                          putStrLn $ "  " ++ key ++ ": " ++ value
-                                        forM_ (prOtherLines result) $ \l ->
-                                          putStrLn l
-                                        putStrLn ""
-                                      putStrLn $ "Result: " ++ rr
+                                rs <- case runParser parser action (ec, out) of
+                                        Left err -> do
+                                                    liftIO $ putStrLn $ "Parser error: " ++ show err
+                                                    return "parse-error"
+                                        Right (rr, results) -> do
+                                                    runDB dbc $ forM_ results $ logOutput arid
+                                                    liftIO $ putStrLn $ "Result: " ++ rr
+                                                    return rr
+                                runDB dbc $ finishAction arid ec rs
       case hcVM host of
         Nothing -> return ()
         Just vm -> when (phShutdownVM ph) $

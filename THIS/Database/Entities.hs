@@ -37,7 +37,7 @@ ActionRecord
   action String
   start UTCTime
   end UTCTime Maybe
-  returnCode Int
+  returnCode Int Maybe
   result String
 
 OutputGroupRecord
