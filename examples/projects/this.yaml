@@ -1,0 +1,55 @@
+title: THe Integration Server
+owner: portnov
+
+directory: /home/portnov/src/progs/haskell/integration-server/
+
+hosts:
+  portnov@lenovo:
+    host: lenovo.local
+    login: portnov
+    port: 2345
+    path: /home/this/build/integration-server/
+    known-hosts: /home/portnov/.ssh/known_hosts
+    public-key:  /home/portnov/.ssh/id_rsa.pub
+    private-key: /home/portnov/.ssh/id_rsa
+
+  lenovo:
+    host: lenovo.local
+    port: 2345
+    path: /home/this/build/integration-server/
+    known-hosts: /home/portnov/.ssh/known_hosts
+    public-key:  /home/portnov/.ssh/id_rsa.pub
+    private-key: /home/portnov/.ssh/id_rsa
+
+phases:
+  init:
+    where: portnov@lenovo
+    actions: 
+      - sudo -u postgres createuser -dSR this
+      - sudo -u postgres createdb -O this this
+      - cabal update
+    executor: raw
+    parser: all-ok
+
+  deps:
+    where: lenovo
+    actions:
+      - persistent
+      - persistent-postgresql
+      - persistent-template
+    executor: cabal-dev-install
+    parser: cabal
+
+  build:
+    where: lenovo
+    actions: [all, install-db]
+    ENV: LANG=C
+    executor: make
+    parser: ghc
+
+  clean:
+    where: lenovo
+    actions: clean
+    ENV: LANG=C
+    executor: make
+    parser: all-ok

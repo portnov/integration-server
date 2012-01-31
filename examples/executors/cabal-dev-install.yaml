@@ -1,0 +1,3 @@
+
+$$:
+  commands: cabal-dev install ${action} 2>&1

@@ -1,0 +1,21 @@
+$$:
+  result:
+    ok: 0
+    warning: Warning
+    error: broken-deps
+
+  groups:
+    building:
+      "^Building ([^ ]+)\\.\\.\\.$": [package]
+
+    good:
+      "^\\[.*\\] Compiling ([^ ]+)": [module]
+
+    other:
+      "^([^ ]+):(\\d+):(\\d+):$": [filename, line, column]
+      "^\\s+(\\w+):(.*)$": [group, message]
+      ".+": []
+
+    broken-deps:
+      "cannot satisfy -package ([^ ]+):": [package]
+      ".+": []

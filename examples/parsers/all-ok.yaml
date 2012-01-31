@@ -1,0 +1,7 @@
+$$:
+  result:
+    ok: all
+
+  groups:
+    all:
+      "^(.*)$": [start]

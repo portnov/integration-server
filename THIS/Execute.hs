@@ -79,8 +79,9 @@ execute gc projectName phase extVars = do
                                               Right x -> return x
                                 liftIO $ putStrLn $ "Executing: " ++ show commands
                                 (ec, out) <- liftIO $ runCommandsA cmdP commands
-                                liftIO $ putStrLn $ "Output: " ++ show out
-                                rs <- case runParser parser action (ec, out) of
+                                let out' = concatMap lines out
+                                liftIO $ putStrLn $ "Output: " ++ show out'
+                                rs <- case runParser parser action (ec, out') of
                                         Left err -> do
                                                     liftIO $ putStrLn $ "Parser error: " ++ show err
                                                     return "parse-error"
