@@ -79,11 +79,13 @@ execute gc projectName phase extVars = do
                                               Left err -> failure err :: MTHIS [String]
                                               Right x -> return x
                                 liftIO $ putStrLn $ "Executing: " ++ show commands
-                                source <- liftIO $ runCommandsA cmdP commands
-                                (groups, sink) <- lift $ liftEither $ getParserSink parser action
-                                rr <- liftIO $ runResourceT $ source $= parse groups $$ sink
-                                --liftIO $ putStrLn $ "Output: " ++ show out
-                                runDB dbc $ finishAction arid 0 rr
+                                (rch, source) <- liftIO $ runCommandsA cmdP commands
+                                (ap, sink) <- lift $ liftEither $ getParserSink parser action
+                                rr <- liftIO $ runResourceT $ source $= parse ap $$ sink
+                                rc <- liftIO $ getExitStatusA rch
+                                let rr' = updateResult ap rc rr
+                                liftIO $ putStrLn $ "Exit code: " ++ show rc
+                                runDB dbc $ finishAction arid rc rr'
       case hcVM host of
         Nothing -> return ()
         Just vm -> when (phShutdownVM ph) $

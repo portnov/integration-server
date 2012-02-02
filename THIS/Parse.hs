@@ -2,7 +2,8 @@
 module THIS.Parse
   (ParserResult (..),
    getParserSink,
-   parse
+   parse,
+   updateResult
   ) where
 
 import Control.Monad
@@ -76,9 +77,11 @@ matchR line ((name, regex, captures):other) =
                  in  Just (name, pairs)
        _ -> error $ "Unexpected regex result: " ++ show allMatches
 
-parse :: [(String, ResultGroup)] -> Conduit String IO ParserResult
-parse pairs = conduitState emptyState push close
+parse :: ActionParser -> Conduit String IO ParserResult
+parse ap = conduitState emptyState push close
   where
+    pairs = apGroups ap
+
     close _ = return []
 
     push st line = do
@@ -112,11 +115,11 @@ groupName pr =
     Just group -> group
     Nothing    -> prGroupName pr
 
-getParserSink :: Parser -> String -> Either ErrorMessage ([(String, ResultGroup)], Sink ParserResult IO String)
+getParserSink :: Parser -> String -> Either ErrorMessage (ActionParser, Sink ParserResult IO String)
 getParserSink (Parser parser) action =
   case lookup action parser `mplus` lookup "$$" parser of
     Nothing -> failure $ "Action is not supported by parser: " ++ action
-    Just ap -> return (apGroups ap, sinkState "ok" (push ap) close)
+    Just ap -> return (ap, sinkState "ok" (push ap) close)
   where
     push ap st pr = do
       let cur = lookupGroup 0 (apResultsMap ap) (groupName pr)
@@ -126,23 +129,13 @@ getParserSink (Parser parser) action =
 
     close st = return st
 
-    cmpOrder ap x y = fromMaybe (compare x y) $ do
-                     i <- findIndex (== x) (full ap)
-                     j <- findIndex (== y) (full ap)
-                     return $ compare i j
-
+cmpOrder :: ActionParser -> String -> String -> Ordering
+cmpOrder ap x y = fromMaybe (compare x y) $ do
+                 i <- findIndex (== x) (full ap)
+                 j <- findIndex (== y) (full ap)
+                 return $ compare i j
+  where 
     full ap = completeResultsList (map fst $ apResultsMap ap)
-
-selectMaxResult :: [String] -> [String] -> String
-selectMaxResult _ [] = "error"
-selectMaxResult base results =
-    maximumBy cmpOrder results
-  where
-    full = completeResultsList base
-    cmpOrder x y = fromMaybe (compare x y) $ do
-                     i <- findIndex (== x) full
-                     j <- findIndex (== y) full
-                     return $ compare i j
 
 completeResultsList :: [String] -> [String]
 completeResultsList list =
@@ -163,6 +156,13 @@ matches group (ResultsList list) = any good list
   where good (GroupName name) = (name == group)
         good _                = False
 matches group _ = False
+
+updateResult :: ActionParser -> Int -> String -> String
+updateResult ap rc rr = 
+  let groups = apGroups ap
+      pairs  = apResultsMap ap
+      full   = completeResultsList (map fst pairs)
+  in  maximumBy (cmpOrder ap) [lookupCode rc pairs, rr]
 
 lookupCode :: Int -> [(String, ResultsRange)] -> String
 lookupCode 0 [] = "ok"

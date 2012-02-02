@@ -49,9 +49,13 @@ deinitializeProtocols = do
 disconnectA :: AnyProtocol -> IO ()
 disconnectA (AnyProtocol p) = disconnect p
 
-runCommandsA :: AnyCommandProtocol -> [String] -> IO (Source IO String)
-runCommandsA (AnyCommandProtocol p) commands =
-  runCommands p commands
+runCommandsA :: AnyCommandProtocol -> [String] -> IO (AnyRCHandle, Source IO String)
+runCommandsA (AnyCommandProtocol p) commands = do
+  (h, r) <- runCommands p commands
+  return (AnyRCHandle h, r)
+
+getExitStatusA :: AnyRCHandle -> IO Int
+getExitStatusA (AnyRCHandle h) = getExitStatus h
 
 chdirA :: AnyCommandProtocol -> FilePath -> IO ()
 chdirA (AnyCommandProtocol p) dir = changeWorkingDirectory p dir

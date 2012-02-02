@@ -3,6 +3,7 @@ module THIS.Protocols.LibSSH2 where
 
 import Control.Applicative
 import Control.Concurrent.STM
+import Control.Monad
 import Data.Monoid
 import Data.Conduit
 import Network
@@ -51,15 +52,21 @@ instance Protocol LibSSH2 where
     return ()
 
 instance CommandProtocol LibSSH2 where
+  data RCHandle LibSSH2 = CH CommandsHandle
+
   runCommands (LibSSH2 session var) commands = do
       mbd <- atomically $ tryTakeTMVar var
       let cmds = case mbd of
                    Nothing -> commands
                    Just dir -> map (inDir dir) commands
-      srcs <- mapM (execCommand False session) cmds
-      return $ mconcat (map snd srcs)
+      let bs = replicate (length commands - 1) False ++ [True]
+      res <- zipWithM (\cmd b -> execCommand b session cmd) cmds bs
+      let Just h = fst (last res)
+      return (CH h, mconcat (map snd res))
     where
       inDir dir cmd = printf "if cd %s; then %s; else exit 1; fi" dir cmd
+  
+  getExitStatus (CH h) = getReturnCode h
 
   changeWorkingDirectory (LibSSH2 _ var) dir =
       atomically $ putTMVar var dir

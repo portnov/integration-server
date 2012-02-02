@@ -4,6 +4,7 @@ module THIS.Protocols.SSHCommands where
 import Control.Applicative
 import Control.Monad
 import Control.Monad.Trans
+import Control.Concurrent.STM
 import System.Process
 import System.Exit
 import Text.Printf
@@ -26,21 +27,27 @@ rc2int :: ExitCode -> Int
 rc2int ExitSuccess = 0
 rc2int (ExitFailure n) = n
 
-runSSH :: ConnectionInfo -> [String] -> IO String
+runSSH :: ConnectionInfo -> [String] -> IO (Int, String)
 runSSH cfg params = do
     (ec, out, _) <- readProcessWithExitCode "ssh"
                        (show cfg: params)
                        ""
-    return (out)
+    return (rc2int ec, out)
 
 instance CommandProtocol SSHCommands where
-  runCommands (SSHCommands cfg) commands =
-      return $ sourceState commands pull
+  data RCHandle SSHCommands = V (TVar Int)
+
+  runCommands (SSHCommands cfg) commands = do
+      var <- newTVarIO 1
+      return (V var, sourceState commands (pull var))
     where
-      pull [] = return StateClosed
-      pull (cmd:other) = do
-        out <- liftIO $ runSSH cfg [cmd]
+      pull _ [] = return StateClosed
+      pull var (cmd:other) = do
+        (rc, out) <- liftIO $ runSSH cfg [cmd]
+        liftIO $ atomically $ writeTVar var rc
         return $ StateOpen other out
+
+  getExitStatus (V var) = atomically $ readTVar var
 
   changeWorkingDirectory _ _ = fail "chdir not implemented"
 

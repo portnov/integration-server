@@ -1,4 +1,4 @@
-{-# LANGUAGE ExistentialQuantification #-}
+{-# LANGUAGE ExistentialQuantification, TypeFamilies #-}
 module THIS.Protocols.Types where
 
 import Control.Applicative
@@ -31,11 +31,16 @@ class Protocol p where
 data AnyProtocol = forall p. Protocol p => AnyProtocol p
 
 class (Protocol p) => CommandProtocol p where
+  data RCHandle p
   changeWorkingDirectory :: p -> FilePath -> IO ()
-  runCommands :: p -> [String] -> IO (Source IO String)
+  runCommands :: p -> [String] -> IO (RCHandle p, Source IO String)
+  getExitStatus :: RCHandle p -> IO Int
 
 data AnyCommandProtocol =
   forall p. CommandProtocol p => AnyCommandProtocol p
+
+data AnyRCHandle =
+  forall p. CommandProtocol p => AnyRCHandle (RCHandle p)
 
 class (Protocol p) => SendProtocol p where
   sendFile :: p -> FilePath -> FilePath -> IO ()
