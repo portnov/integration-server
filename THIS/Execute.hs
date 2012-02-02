@@ -74,7 +74,10 @@ execute gc projectName phase extVars = do
                   Left err -> liftIO $ putStrLn $ "Error in command for action " ++ action ++ ": " ++ err
                   Right cmds -> do
                                 arid <- runDB dbc $ startAction pid phase action
-                                let env = ("action", action): phEnvironment ph
+                                let actionEnv = phEnvironment ph ++ extVars
+                                actionRendered <- lift $ liftEitherWith ParsecError $ evalTemplate exePath object actionEnv action
+                                let env = ("action", actionRendered): actionEnv
+                                liftIO $ putStrLn $ "ENV: " ++ show env
                                 commands <- case mapM (evalTemplate exePath object env) cmds of
                                               Left err -> failure err :: MTHIS [String]
                                               Right x -> return x

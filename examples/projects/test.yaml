@@ -44,7 +44,7 @@ hosts:
 phases:
   count:
     where: local
-    actions: "/home/portnov/bin/count 10"
+    actions: /home/portnov/bin/count ${count}
     executor: raw
     parser: all-ok
 
