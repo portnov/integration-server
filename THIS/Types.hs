@@ -124,6 +124,12 @@ instance E.Error ErrorMessage where
 
 type THIS a = ErrorT ErrorMessage IO a
 
+groupName :: ParserResult -> String
+groupName pr =
+  case lookup "group" (prParams pr) of
+    Just group -> group
+    Nothing    -> prGroupName pr
+
 liftEither :: Either ErrorMessage a -> THIS a
 liftEither e = ErrorT (return e)
 

@@ -35,12 +35,12 @@ startAction pid phase action = do
   insert record
 
 logOutput :: ActionRecordId -> ParserResult -> DB OutputGroupRecordId
-logOutput arid (ParserResult {..}) = do
+logOutput arid pr@(ParserResult {..}) = do
   now <- liftIO getCurrentTime
   let groupRecord = OutputGroupRecord {
                       outputGroupRecordActionRecord = arid,
                       outputGroupRecordTime         = Just now,
-                      outputGroupRecordGroupName    = prGroupName,
+                      outputGroupRecordGroupName    = groupName pr,
                       outputGroupRecordOtherLines   = Text.pack (unlines prOtherLines) }
   grid <- insert groupRecord
   forM_ prParams $ \(name, value) -> do

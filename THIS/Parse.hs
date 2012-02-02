@@ -103,12 +103,6 @@ parse ap = conduitState emptyState push close
                                      pairs = zip names (tail list)
                                  return $ StateProducing (addParams pairs st) []
 
-groupName :: ParserResult -> String
-groupName pr =
-  case lookup "group" (prParams pr) of
-    Just group -> group
-    Nothing    -> prGroupName pr
-
 getParserSink :: DBConfig -> ActionRecordId -> Parser -> String -> Either ErrorMessage (ActionParser, Sink ParserResult IO String)
 getParserSink dbc arid (Parser parser) action =
   case lookup action parser `mplus` lookup "$$" parser of
