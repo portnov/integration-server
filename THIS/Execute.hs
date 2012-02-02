@@ -9,6 +9,7 @@ import Data.Object
 import System.FilePath
 import System.FilePath.Glob
 import System.Directory
+import Data.Conduit
 
 import THIS.Types
 import THIS.Yaml
@@ -78,18 +79,11 @@ execute gc projectName phase extVars = do
                                               Left err -> failure err :: MTHIS [String]
                                               Right x -> return x
                                 liftIO $ putStrLn $ "Executing: " ++ show commands
-                                (ec, out) <- liftIO $ runCommandsA cmdP commands
-                                let out' = concatMap lines out
-                                liftIO $ putStrLn $ "Output: " ++ show out'
-                                rs <- case runParser parser action (ec, out') of
-                                        Left err -> do
-                                                    liftIO $ putStrLn $ "Parser error: " ++ show err
-                                                    return "parse-error"
-                                        Right (rr, results) -> do
-                                                    runDB dbc $ forM_ results $ logOutput arid
-                                                    liftIO $ putStrLn $ "Result: " ++ rr
-                                                    return rr
-                                runDB dbc $ finishAction arid ec rs
+                                source <- liftIO $ runCommandsA cmdP commands
+                                (groups, sink) <- lift $ liftEither $ getParserSink parser action
+                                rr <- liftIO $ runResourceT $ source $= parse groups $$ sink
+                                --liftIO $ putStrLn $ "Output: " ++ show out
+                                runDB dbc $ finishAction arid 0 rr
       case hcVM host of
         Nothing -> return ()
         Just vm -> when (phShutdownVM ph) $

@@ -42,6 +42,12 @@ hosts:
     name: lenny32
 
 phases:
+  count:
+    where: local
+    actions: "/home/portnov/bin/count 10"
+    executor: raw
+    parser: all-ok
+
   build:
     where: ${host-by-environment[environment]}
     actions: [all, clean]

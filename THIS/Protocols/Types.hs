@@ -4,6 +4,7 @@ module THIS.Protocols.Types where
 import Control.Applicative
 import Data.Object
 import Data.Object.Yaml
+import Data.Conduit
 
 import THIS.Types
 import THIS.Yaml
@@ -31,7 +32,7 @@ data AnyProtocol = forall p. Protocol p => AnyProtocol p
 
 class (Protocol p) => CommandProtocol p where
   changeWorkingDirectory :: p -> FilePath -> IO ()
-  runCommands :: p -> [String] -> IO (Int, [String])
+  runCommands :: p -> [String] -> IO (Source IO String)
 
 data AnyCommandProtocol =
   forall p. CommandProtocol p => AnyCommandProtocol p

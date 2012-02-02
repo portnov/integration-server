@@ -5,6 +5,7 @@ import Control.Failure
 import Data.Object
 import Data.Object.Yaml
 import Data.Maybe
+import Data.Conduit
 
 import THIS.Types
 import THIS.Yaml
@@ -48,7 +49,7 @@ deinitializeProtocols = do
 disconnectA :: AnyProtocol -> IO ()
 disconnectA (AnyProtocol p) = disconnect p
 
-runCommandsA :: AnyCommandProtocol -> [String] -> IO (Int, [String])
+runCommandsA :: AnyCommandProtocol -> [String] -> IO (Source IO String)
 runCommandsA (AnyCommandProtocol p) commands =
   runCommands p commands
 

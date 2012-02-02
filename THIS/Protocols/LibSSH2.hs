@@ -3,6 +3,8 @@ module THIS.Protocols.LibSSH2 where
 
 import Control.Applicative
 import Control.Concurrent.STM
+import Data.Monoid
+import Data.Conduit
 import Network
 import Network.Socket hiding (connect)
 import System.IO
@@ -11,6 +13,7 @@ import Text.Printf
 
 import Network.SSH.Client.LibSSH2.Foreign
 import Network.SSH.Client.LibSSH2
+import Network.SSH.Client.LibSSH2.Conduit
 
 import THIS.Types
 import THIS.Yaml
@@ -53,8 +56,8 @@ instance CommandProtocol LibSSH2 where
       let cmds = case mbd of
                    Nothing -> commands
                    Just dir -> map (inDir dir) commands
-      (rc, out) <- execCommands session cmds
-      return (rc, map decodeString out)
+      srcs <- mapM (execCommand False session) cmds
+      return $ mconcat (map snd srcs)
     where
       inDir dir cmd = printf "if cd %s; then %s; else exit 1; fi" dir cmd
 

@@ -3,9 +3,11 @@ module THIS.Protocols.SSHCommands where
 
 import Control.Applicative
 import Control.Monad
+import Control.Monad.Trans
 import System.Process
 import System.Exit
 import Text.Printf
+import Data.Conduit
 
 import THIS.Types
 import THIS.Yaml
@@ -24,17 +26,21 @@ rc2int :: ExitCode -> Int
 rc2int ExitSuccess = 0
 rc2int (ExitFailure n) = n
 
-runSSH :: ConnectionInfo -> [String] -> IO (Int, String)
+runSSH :: ConnectionInfo -> [String] -> IO String
 runSSH cfg params = do
     (ec, out, _) <- readProcessWithExitCode "ssh"
                        (show cfg: params)
                        ""
-    return (rc2int ec, out)
+    return (out)
 
 instance CommandProtocol SSHCommands where
-  runCommands (SSHCommands cfg) commands = do
-    outs <- forM commands $ \cmd -> runSSH cfg [cmd]
-    return (fst (last outs), map snd outs)
+  runCommands (SSHCommands cfg) commands =
+      return $ sourceState commands pull
+    where
+      pull [] = return StateClosed
+      pull (cmd:other) = do
+        out <- liftIO $ runSSH cfg [cmd]
+        return $ StateOpen other out
 
   changeWorkingDirectory _ _ = fail "chdir not implemented"
 

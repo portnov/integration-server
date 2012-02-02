@@ -1,7 +1,8 @@
 
 module THIS.Parse
   (ParserResult (..),
-   runParser
+   getParserSink,
+   parse
   ) where
 
 import Control.Monad
@@ -10,6 +11,7 @@ import Control.Failure
 import Data.Maybe
 import Data.List
 import Text.Regex.PCRE
+import Data.Conduit
 
 import THIS.Types
 import THIS.Yaml
@@ -26,8 +28,7 @@ data ParserState = ParserState {
   psGroupName :: String,
   psParams :: [(String, String)],
   psLineNr :: Int,
-  psOtherLines :: [String],
-  psResult :: [ParserResult] }
+  psOtherLines :: [String] }
   deriving (Eq, Show)
 
 emptyState :: ParserState
@@ -36,37 +37,30 @@ emptyState = ParserState {
                psGroupName = "",
                psParams = [],
                psLineNr = 0,
-               psOtherLines = [],
-               psResult = [] }
+               psOtherLines = [] }
 
-setCurrentGroup :: String -> Maybe ResultGroup -> State ParserState ()
-setCurrentGroup name grp =
-  modify $ \st -> st {
+setCurrentGroup :: String -> Maybe ResultGroup -> ParserState -> ParserState
+setCurrentGroup name grp st = st {
                     psCurrentGroup = grp,
                     psGroupName = name,
                     psParams = [],
                     psOtherLines = [],
                     psLineNr = 1 }
 
-saveResults :: State ParserState ()
-saveResults = do
-  st <- St.get
-  let new = ParserResult {
+getResult :: ParserState -> ParserResult
+getResult st = ParserResult {
               prGroupName = psGroupName st,
               prParams = psParams st,
               prOtherLines = psOtherLines st }
-  put $ st { psResult = psResult st ++ [new] }
 
-addParams :: [(String, String)] -> State ParserState ()
-addParams params =
-  modify $ \st -> st { psParams = psParams st ++ params }
+addParams :: [(String, String)] -> ParserState -> ParserState
+addParams params st = st { psParams = psParams st ++ params }
 
-addOtherLine :: String -> State ParserState ()
-addOtherLine line =
-  modify $ \st -> st { psOtherLines = psOtherLines st ++ [line] }
+addOtherLine :: String -> ParserState -> ParserState
+addOtherLine line st = st { psOtherLines = psOtherLines st ++ [line] }
 
-step :: State ParserState ()
-step = modify $ \st -> st { psLineNr = psLineNr st + 1 }
+step :: ParserState -> ParserState
+step st = st { psLineNr = psLineNr st + 1 }
 
 continueNames :: [String] -> [String]
 continueNames list = list ++ drop (length list) (map show [1..])
@@ -82,34 +76,35 @@ matchR line ((name, regex, captures):other) =
                  in  Just (name, pairs)
        _ -> error $ "Unexpected regex result: " ++ show allMatches
 
-parse :: [(String, ResultGroup)] -> [String] -> [ParserResult]
-parse pairs strings =
-    filter (\r -> prGroupName r /= "") $ psResult $ execState (mapM go strings >> saveResults) emptyState
+parse :: [(String, ResultGroup)] -> Conduit String IO ParserResult
+parse pairs = conduitState emptyState push close
   where
-    go :: String -> State ParserState ()
-    go line = do
+    close _ = return []
+
+    push st line = do
       let ms = [(name, fst $ head (rgLines g), snd $ head (rgLines g)) | (name, g) <- pairs] 
       case matchR line ms of
         Just (group, params) -> do
-                                saveResults
-                                setCurrentGroup group (lookup group pairs)
-                                addParams params
+          let new = addParams params $ setCurrentGroup group (lookup group pairs) st
+              res = getResult st
+          return (StateProducing new [res])
+
         Nothing -> do
-                   i <- gets psLineNr
-                   mbg <- gets psCurrentGroup
-                   case mbg of
-                     Nothing -> return ()
-                     Just g -> do
-                       if i >= length (rgLines g)
-                         then addOtherLine line
-                         else do
-                              let (regex, captures) = rgLines g !! i
-                              case line =~ regex of
-                                [] -> addOtherLine line
-                                [list] -> do
-                                          let names = continueNames captures
-                                              pairs = zip names (tail list)
-                                          addParams pairs
+          let i = psLineNr st
+              mbg = psCurrentGroup st
+          case mbg of
+            Nothing -> return (StateProducing st [])
+            Just g  -> do
+              if i >= length (rgLines g)
+                then return $ StateProducing (addOtherLine line st) []
+                else do
+                     let (regex, captures) = rgLines g !! i
+                     case line =~ regex of
+                       [] -> return $ StateProducing (addOtherLine line st) []
+                       [list] -> do
+                                 let names = continueNames captures
+                                     pairs = zip names (tail list)
+                                 return $ StateProducing (addParams pairs st) []
 
 groupName :: ParserResult -> String
 groupName pr =
@@ -117,16 +112,26 @@ groupName pr =
     Just group -> group
     Nothing    -> prGroupName pr
 
-runParser :: Parser -> String -> (Int, [String]) -> Either ErrorMessage (String, [ParserResult])
-runParser (Parser parser) action (code, output) =
+getParserSink :: Parser -> String -> Either ErrorMessage ([(String, ResultGroup)], Sink ParserResult IO String)
+getParserSink (Parser parser) action =
   case lookup action parser `mplus` lookup "$$" parser of
     Nothing -> failure $ "Action is not supported by parser: " ++ action
-    Just ap -> let pre = lookupCode code (apResultsMap ap)
-                   results = parse (apGroups ap) output
-                   groups  = map groupName results
-                   res = map (lookupGroup code (apResultsMap ap)) groups
-                   maxResult = selectMaxResult (map fst $ apResultsMap ap) res
-               in  Right (maxResult, results)
+    Just ap -> return (apGroups ap, sinkState "ok" (push ap) close)
+  where
+    push ap st pr = do
+      let cur = lookupGroup 0 (apResultsMap ap) (groupName pr)
+          new = maximumBy (cmpOrder ap) [st, cur]
+      liftIO $ putStrLn $ "result: " ++ new
+      return $ StateProcessing new
+
+    close st = return st
+
+    cmpOrder ap x y = fromMaybe (compare x y) $ do
+                     i <- findIndex (== x) (full ap)
+                     j <- findIndex (== y) (full ap)
+                     return $ compare i j
+
+    full ap = completeResultsList (map fst $ apResultsMap ap)
 
 selectMaxResult :: [String] -> [String] -> String
 selectMaxResult _ [] = "error"
