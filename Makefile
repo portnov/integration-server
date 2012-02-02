@@ -1,9 +1,6 @@
 GHC=ghc $(GHCFLAGS) --make
 
-all: parser-test this this-install-db
-
-parser-test: parser-test.hs THIS/*.hs THIS/*/*.hs
-	$(GHC) $<
+all: this this-install-db
 
 this-install-db: this-install-db.hs THIS/*.hs THIS/*/*.hs
 	$(GHC) $<
