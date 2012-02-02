@@ -1,5 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
-module THIS.Execute where
+module THIS.Execute
+  (execute
+  ) where
 
 import Control.Monad
 import Control.Monad.Error
@@ -12,33 +14,43 @@ import System.Directory
 import Data.Conduit
 
 import THIS.Types
+import THIS.Util
 import THIS.Yaml
 import THIS.Config.ProjectConfig
 import THIS.Config.Executor
 import THIS.Config.Parser
 import THIS.ConnectionsManager
 import THIS.Protocols
+import THIS.Protocols.Types
 import THIS.Templates.Text
 import THIS.Hypervisor
 import THIS.Parse
 import THIS.Database
 
-actionCommands :: String -> [(String, String)] -> Executor -> Either String [String]
-actionCommands action pairs exe =
+-- | Get list of commands for given action from executor
+actionCommands :: String                 -- ^ Action name
+               -> Executor
+               -> Either String [String]
+actionCommands action exe =
   case lookupAction action exe of
     Nothing -> Left $ "Unknown action in executor: " ++ action
     Just ac -> Right (acCommands ac)
 
-environment :: ProjectConfig -> Phase -> [(String, String)]
-environment pc ph = phEnvironment ph ++ hcParams (phWhere ph) ++ pcEnvironment pc
+-- | Compose environment for given project and phase
+environment :: ProjectConfig -> Phase -> Variables -> Variables
+environment pc ph ext = phEnvironment ph ++ hcParams (phWhere ph) ++ pcEnvironment pc ++ ext
 
-execute :: GlobalConfig -> String -> String -> [(String, String)] -> THIS ()
+-- | Execute a phase for the project
+execute :: GlobalConfig
+        -> String           -- ^ Project name
+        -> String           -- ^ Phase name
+        -> Variables        -- ^ External environment
+        -> THIS ()
 execute gc projectName phase extVars = do
   chosts <- loadCommonHosts
   (ppath, object, pc) <- loadProjectConfig projectName extVars chosts
   let dbc = gcDatabase gc
   pid <- runDB dbc $ checkProject ppath projectName pc
-  liftIO $ putStrLn $ "Project ID: " ++ show pid
   case lookup phase (pcPhases pc) of
     Nothing -> lift $ putStrLn $ "No such phase: " ++ phase
     Just ph -> do
@@ -49,48 +61,78 @@ execute gc projectName phase extVars = do
         Just vm -> do
                    liftIO $ putStrLn $ "Running VM"
                    liftIO $ runVM object (hcParams host) vm
+      (exePath, exe) <- loadExecutor (phExecutor ph)
       parser <- loadParser (phParser ph)
+      let phaseEnvironment = environment pc ph extVars
       manageConnections (hcParams host) $ do
-          when (not $ null $ phCreateFiles ph) $ do
-            send <- getSendProtocol (hcHostname host)
-            lift $ forM_ (phCreateFiles ph) $ \(template, path) -> do
-                      temp <- evalTextFile (Mapping []) (phEnvironment ph) template
-                      liftIO $ putStrLn $ "Sending file: " ++ path
-                      lift $ sendFileA send temp (hcPath host </> path)
-          (exePath, exe) <- lift $ loadExecutor (phExecutor ph)
-          let aclist = if null (phActions ph)
-                         then if null (exActions exe)
-                                then [phase]
-                                else exActions exe
-                         else phActions ph
-          liftIO $ print (hcParams host)
-          cmdP <- getCommandProtocol (hcHostname host)
-          liftIO $ chdirA cmdP (hcPath host)
-          forM_ aclist $ \action -> do
-            case lookupAction action exe of
-              Nothing -> liftIO $ putStrLn $ "Action is not supported by executor: " ++ action
-              Just ac -> when (action /= "$$") $ do
-                case actionCommands action (environment pc ph) exe of
-                  Left err -> liftIO $ putStrLn $ "Error in command for action " ++ action ++ ": " ++ err
-                  Right cmds -> do
-                                arid <- runDB dbc $ startAction pid phase action
-                                let actionEnv = phEnvironment ph ++ extVars
-                                actionRendered <- lift $ liftEitherWith ParsecError $ evalTemplate exePath object actionEnv action
-                                let env = ("action", actionRendered): actionEnv
-                                liftIO $ putStrLn $ "ENV: " ++ show env
-                                commands <- case mapM (evalTemplate exePath object env) cmds of
-                                              Left err -> failure err :: MTHIS [String]
-                                              Right x -> return x
-                                liftIO $ putStrLn $ "Executing: " ++ show commands
-                                (rch, source) <- liftIO $ runCommandsA cmdP commands
-                                (ap, sink) <- lift $ liftEither $ getParserSink dbc arid parser action
-                                rr <- liftIO $ runResourceT $ source $= parse ap $$ sink
-                                rc <- liftIO $ getExitStatusA rch
-                                let rr' = updateResult ap rc rr
-                                liftIO $ putStrLn $ "Exit code: " ++ show rc
-                                runDB dbc $ finishAction arid rc rr'
+          createFiles (hcHostname host) (hcPath host) (phCreateFiles ph) phaseEnvironment
+          executeActions dbc pid host phase ph exePath exe parser object phaseEnvironment
       case hcVM host of
         Nothing -> return ()
         Just vm -> when (phShutdownVM ph) $
                        liftIO $ putStrLn "Shutting VM down"
 
+-- | Execute all actions for project's phase
+executeActions :: DBConfig
+               -> ProjectId
+               -> HostConfig
+               -> String       -- ^ Phase name
+               -> Phase
+               -> FilePath
+               -> Executor
+               -> Parser
+               -> StringObject -- ^ Project config object
+               -> Variables    -- ^ Phase environment
+               -> MTHIS ()
+executeActions dbc pid host phase ph exePath exe parser object phaseEnvironment = do
+  -- If actions list is defined for the phase, use it;
+  -- Otherwise, use list of actions defined for the executor;
+  -- If it isn't defined too, actions list == [phase name]
+  let actions = if null (phActions ph)
+                 then if null (exActions exe)
+                        then [phase]
+                        else exActions exe
+                 else phActions ph
+  -- Connect to remote host
+  cmdP <- getCommandProtocol (hcHostname host)
+  liftIO $ chdirA cmdP (hcPath host)
+  forM_ actions $ \action -> do
+    case lookupAction action exe of
+      Nothing -> liftIO $ putStrLn $ "Action is not supported by executor: " ++ action
+      Just actionConfig ->
+        when (action /= "$$") $ do
+          let cmds = acCommands actionConfig
+          -- Log action start to DB
+          arid <- runDB dbc $ startAction pid phase action
+          -- Substitute current environment to the action
+          actionRendered <- lift $ liftEitherWith ParsecError $
+                                evalTemplate exePath object phaseEnvironment action
+          -- For commands, add "action" variable to environment
+          let commandsEnv = ("action", actionRendered): phaseEnvironment
+          commands <- lift $ liftEitherWith ParsecError $
+                          mapM (evalTemplate exePath object commandsEnv) cmds
+          liftIO $ putStrLn $ "Executing: " ++ show commands
+          -- Get source to read commands output and return code
+          (rch, source) <- liftIO $ runCommandsA cmdP commands
+          -- Get sink to parse and log commands output
+          (actionParser, sink) <- lift $ liftEither $ getParserSink dbc arid parser action
+          result <- liftIO $ runResourceT $ source $= parse actionParser $$ sink
+          exitCode <- liftIO $ getExitStatusA rch
+          let finalResult = updateResult actionParser exitCode result
+          liftIO $ putStrLn $ "Exit code: " ++ show exitCode
+          -- Log action end in DB
+          runDB dbc $ finishAction arid exitCode finalResult
+
+-- | Create files by templates
+createFiles :: String             -- ^ Host name
+            -> FilePath           -- ^ Remote base path
+            -> [(String, String)] -- ^ (template name, file path)
+            -> Variables          -- ^ Environment for templates
+            -> MTHIS ()
+createFiles hostname remoteBase pairs env = when (not $ null pairs) $ do
+    send <- getSendProtocol hostname
+    lift $ forM_ pairs $ \(template, path) -> do
+              temp <- evalTextFile (Mapping []) env template
+              liftIO $ putStrLn $ "Sending file: " ++ path
+              lift $ sendFileA send temp (remoteBase </> path)
+  

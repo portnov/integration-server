@@ -14,6 +14,7 @@ import System.FilePath.Glob
 import System.Directory
 
 import THIS.Types
+import THIS.Util
 import THIS.Yaml
 import THIS.Templates.Text
 

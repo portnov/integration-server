@@ -13,6 +13,7 @@ import System.FilePath
 import System.Directory
 
 import THIS.Types
+import THIS.Util
 import THIS.Yaml
 
 loadGlobalConfig :: THIS GlobalConfig

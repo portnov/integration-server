@@ -11,6 +11,7 @@ import Data.Object.Yaml
 import Text.Printf
 
 import THIS.Types
+import THIS.Util
 import THIS.Yaml
 import THIS.Templates.Text
 

@@ -17,6 +17,7 @@ import Data.Char
 import Data.Time
 
 import THIS.Types
+import THIS.Util
 import THIS.Database.Types
 import THIS.Database.Entities
 import THIS.Database.Util

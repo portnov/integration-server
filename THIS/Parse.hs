@@ -14,17 +14,18 @@ import Text.Regex.PCRE
 import Data.Conduit
 
 import THIS.Types
+import THIS.Util
 import THIS.Yaml
 import THIS.Config.Parser
 import THIS.Database
 
 data ParserState = ParserState {
-  psCurrentGroup :: Maybe ResultGroup,
-  psGroupName :: String,
-  psParams :: [(String, String)],
-  psLineNr :: Int,
-  psOtherLines :: [String] }
-  deriving (Eq, Show)
+    psCurrentGroup :: Maybe ResultGroup -- ^ Current group
+  , psGroupName :: String               -- ^ Current group name
+  , psParams :: [(String, String)]      -- ^ Current group parameters
+  , psLineNr :: Int
+  , psOtherLines :: [String]
+  } deriving (Eq, Show)
 
 emptyState :: ParserState
 emptyState = ParserState {

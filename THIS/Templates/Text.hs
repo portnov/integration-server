@@ -18,6 +18,7 @@ import Text.Parsec
 import Text.Parsec.String as P
 
 import THIS.Types
+import THIS.Util
 import THIS.Yaml
 import THIS.Templates
 
