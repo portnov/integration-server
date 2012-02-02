@@ -83,7 +83,7 @@ execute gc projectName phase extVars = do
                                               Right x -> return x
                                 liftIO $ putStrLn $ "Executing: " ++ show commands
                                 (rch, source) <- liftIO $ runCommandsA cmdP commands
-                                (ap, sink) <- lift $ liftEither $ getParserSink parser action
+                                (ap, sink) <- lift $ liftEither $ getParserSink dbc arid parser action
                                 rr <- liftIO $ runResourceT $ source $= parse ap $$ sink
                                 rc <- liftIO $ getExitStatusA rch
                                 let rr' = updateResult ap rc rr

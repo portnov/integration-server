@@ -112,6 +112,12 @@ data ErrorMessage =
   | NoMessage
   deriving (Show)
 
+data ParserResult = ParserResult {
+  prGroupName :: String,
+  prParams :: Variables,
+  prOtherLines :: [String] }
+  deriving (Eq, Show)
+
 instance E.Error ErrorMessage where
   noMsg = NoMessage
   strMsg = Message

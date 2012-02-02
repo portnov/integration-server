@@ -43,8 +43,8 @@ hosts:
 
 phases:
   count:
-    where: local
-    actions: /home/portnov/bin/count ${count}
+    where: ${host-by-environment[environment]}
+    actions: /home/portnov/bin/count ${count?7}
     executor: raw
     parser: all-ok
 

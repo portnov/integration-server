@@ -1,7 +1,6 @@
 
 module THIS.Parse
-  (ParserResult (..),
-   getParserSink,
+  (getParserSink,
    parse,
    updateResult
   ) where
@@ -17,12 +16,7 @@ import Data.Conduit
 import THIS.Types
 import THIS.Yaml
 import THIS.Config.Parser
-
-data ParserResult = ParserResult {
-  prGroupName :: String,
-  prParams :: Variables,
-  prOtherLines :: [String] }
-  deriving (Eq, Show)
+import THIS.Database
 
 data ParserState = ParserState {
   psCurrentGroup :: Maybe ResultGroup,
@@ -115,8 +109,8 @@ groupName pr =
     Just group -> group
     Nothing    -> prGroupName pr
 
-getParserSink :: Parser -> String -> Either ErrorMessage (ActionParser, Sink ParserResult IO String)
-getParserSink (Parser parser) action =
+getParserSink :: DBConfig -> ActionRecordId -> Parser -> String -> Either ErrorMessage (ActionParser, Sink ParserResult IO String)
+getParserSink dbc arid (Parser parser) action =
   case lookup action parser `mplus` lookup "$$" parser of
     Nothing -> failure $ "Action is not supported by parser: " ++ action
     Just ap -> return (ap, sinkState "ok" (push ap) close)
@@ -125,6 +119,7 @@ getParserSink (Parser parser) action =
       let cur = lookupGroup 0 (apResultsMap ap) (groupName pr)
           new = maximumBy (cmpOrder ap) [st, cur]
       liftIO $ putStrLn $ "result: " ++ new
+      liftIO $ runDB dbc $ logOutput arid pr
       return $ StateProcessing new
 
     close st = return st

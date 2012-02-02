@@ -42,6 +42,7 @@ ActionRecord
 
 OutputGroupRecord
   actionRecord ActionRecordId
+  time UTCTime Maybe
   groupName String
   otherLines Text
 

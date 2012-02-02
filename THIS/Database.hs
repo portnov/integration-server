@@ -17,7 +17,6 @@ import Data.Char
 import Data.Time
 
 import THIS.Types
-import THIS.Parse
 import THIS.Database.Types
 import THIS.Database.Entities
 import THIS.Database.Util
@@ -37,8 +36,10 @@ startAction pid phase action = do
 
 logOutput :: ActionRecordId -> ParserResult -> DB OutputGroupRecordId
 logOutput arid (ParserResult {..}) = do
+  now <- liftIO getCurrentTime
   let groupRecord = OutputGroupRecord {
                       outputGroupRecordActionRecord = arid,
+                      outputGroupRecordTime         = Just now,
                       outputGroupRecordGroupName    = prGroupName,
                       outputGroupRecordOtherLines   = Text.pack (unlines prOtherLines) }
   grid <- insert groupRecord
