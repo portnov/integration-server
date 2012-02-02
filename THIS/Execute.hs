@@ -61,6 +61,7 @@ execute gc projectName phase extVars = do
         Just vm -> do
                    liftIO $ putStrLn $ "Running VM"
                    liftIO $ runVM object (hcParams host) vm
+                   liftIO $ waitVMStartup vm
       (exePath, exe) <- loadExecutor (phExecutor ph)
       parser <- loadParser (phParser ph)
       let phaseEnvironment = environment pc ph extVars
@@ -69,8 +70,9 @@ execute gc projectName phase extVars = do
           executeActions dbc pid host phase ph exePath exe parser object phaseEnvironment
       case hcVM host of
         Nothing -> return ()
-        Just vm -> when (phShutdownVM ph) $
+        Just vm -> when (phShutdownVM ph) $ do
                        liftIO $ putStrLn "Shutting VM down"
+                       liftIO $ shutdownVM vm
 
 -- | Execute all actions for project's phase
 executeActions :: DBConfig

@@ -32,16 +32,24 @@ hosts:
 
   lenny32:
     type: vm
-    host: lenny32.local
-    path: /home/portnov/temp/test/
+    host: debian32
+    login: portnov
+    path: /home/portnov/
     known-hosts: /home/portnov/.ssh/known_hosts
     public-key:  /home/portnov/.ssh/id_rsa.pub
     private-key: /home/portnov/.ssh/id_rsa
-    empty: true
+    empty: false
+    startup-time: 20
     template: template.xml
-    name: lenny32
+    name: Debian32
 
 phases:
+  test:
+    where: lenny32
+    actions: ls
+    executor: raw
+    parser: all-ok
+
   count:
     where: ${host-by-environment[environment]}
     actions: /home/portnov/bin/count ${count?7}

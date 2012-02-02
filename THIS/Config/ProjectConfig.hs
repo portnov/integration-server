@@ -84,7 +84,8 @@ convertHost (name, object) = do
                       <*> getOptional "empty" False object
                       <*> get "template" object
                       <*> getOptional "name" hostname object
-                      <*> getOptional "snapshot" "" object)
+                      <*> getOptional "snapshot" "" object
+                      <*> getOptional "startup-time" 10 object )
             _ -> failure $ "Unknown host type: " ++ ht
   params <- getPairs object
   return (name, HostConfig {

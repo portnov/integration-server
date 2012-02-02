@@ -61,7 +61,8 @@ data VMConfig = VMConfig {
       vmEmpty :: Bool,
       vmTemplatePath :: FilePath,
       vmName :: String,
-      vmSnapshot :: String }
+      vmSnapshot :: String,
+      vmStartupTime :: Int }
   deriving (Eq, Show)
 
 data Phase = Phase {
