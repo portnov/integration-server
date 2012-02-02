@@ -61,7 +61,6 @@ execute gc projectName phase extVars = do
         Just vm -> do
                    liftIO $ putStrLn $ "Running VM"
                    liftIO $ runVM object (hcParams host) vm
-                   liftIO $ waitVMStartup vm
       (exePath, exe) <- loadExecutor (phExecutor ph)
       parser <- loadParser (phParser ph)
       let phaseEnvironment = environment pc ph extVars
