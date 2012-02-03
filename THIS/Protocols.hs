@@ -1,48 +1,33 @@
 module THIS.Protocols where
 
 import Control.Applicative
+import Control.Monad.Trans
 import Control.Failure
 import Data.Object
 import Data.Object.Yaml
 import Data.Maybe
 import Data.Conduit
+import System.Directory
 
 import THIS.Types
+import THIS.Util
 import THIS.Yaml
 import THIS.Protocols.Types
 import THIS.Protocols.Parse
+import THIS.Protocols.Manager
+import THIS.Protocols.Local
 import THIS.Protocols.LibSSH2
 import THIS.Protocols.SSHCommands
 
-lookupDefault :: String -> String -> [(String, String)] -> String
-lookupDefault key def pairs = fromMaybe def $ lookup key pairs
-
-lookupForce :: String -> [(String, String)] -> Either ErrorMessage String
-lookupForce key pairs =
-  case lookup key pairs of
-    Nothing -> failure $ "Key not found: " ++ key
-    Just v  -> return v
-
-loadConnectionInfo :: [(String, String)] -> Either ErrorMessage ConnectionInfo
-loadConnectionInfo pairs = ConnectionInfo
-    <$> lookupForce "host" pairs
-    <*> (readInt $ lookupDefault "port" "22" pairs)
-    <*> (Right $ lookupDefault "login" "this" pairs)
-    <*> (Right $ lookupDefault "known-hosts" kh pairs)
-    <*> (Right $ lookupDefault "public-key" pub pairs)
-    <*> (Right $ lookupDefault "private-key" priv pairs)
-  where
-    kh   = "/etc/this/ssh/known_hosts"
-    pub  = "/etc/this/ssh/id_rsa.pub"
-    priv = "/etc/this/ssh/id_rsa"
-
 initializeProtocols :: IO ()
 initializeProtocols = do
+  initializeProtocol Local
   initializeProtocol (LibSSH2 undefined undefined)
   initializeProtocol (SSHCommands undefined)
 
 deinitializeProtocols :: IO ()
 deinitializeProtocols = do
+  deinitializeProtocol Local
   deinitializeProtocol (LibSSH2 undefined undefined)
   deinitializeProtocol (SSHCommands undefined)
 
@@ -80,5 +65,26 @@ receiveTreeA :: AnyFilesConnection -> FilePath -> FilePath -> IO ()
 receiveTreeA (AnyFilesConnection p) remote local =
   receiveTree p remote local
 
--- transferFiles :: HostConfig -> FilePath -> HostConfig -> FilePath -> MTHIS ()
--- transferFiles srchost src dsthost dst = do
+transferFiles :: HostConfig -> FilePath -> HostConfig -> FilePath -> MTHIS ()
+transferFiles srchost src dsthost dst = do
+  let isDir = last src == '/'
+  mbtc <- getTransferConnections srchost dsthost
+  case mbtc of
+    Nothing -> do
+        tmp <- liftIO tempFile
+        recvP <- getReceiveConnection srchost
+        sendP <- getSendConnection    dsthost
+        if isDir
+          then liftIO $ do
+               receiveTreeA recvP src tmp
+               sendTreeA    sendP tmp dst
+               removeDirectoryRecursive tmp
+          else liftIO $ do
+               receiveFileA recvP src tmp
+               sendFileA    sendP tmp dst
+               removeFile tmp
+    Just (TransferConnections srcp dstp) -> do
+         if isDir
+           then liftIO $ transferTree srcp src dstp dst
+           else liftIO $ transferFile srcp src dstp dst
+

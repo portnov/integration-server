@@ -74,10 +74,14 @@ class (Protocol p) => FilesProtocol p where
 data AnyFilesConnection =
   forall p. FilesProtocol p => AnyFilesConnection p
 
+data TransferConnections =
+  forall p. FilesProtocol p => TransferConnections p p
+
 data Connections = Connections {
-    commandConnections :: M.Map String AnyCommandConnection,
-    sendConnections    :: M.Map String AnyFilesConnection,
-    receiveConnections :: M.Map String AnyFilesConnection }
+    commandConnections  :: M.Map String AnyCommandConnection,
+    sendConnections     :: M.Map String AnyFilesConnection,
+    receiveConnections  :: M.Map String AnyFilesConnection,
+    transferConnections :: M.Map (String, String) TransferConnections }
 
 type Managed m a = StateT Connections m a
 

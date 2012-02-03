@@ -47,3 +47,11 @@ parseReceiveProtocol "ssh-commnands" cfg =
     AnyFilesConnection <$> (connect cfg :: IO SSHCommands)
 parseReceiveProtocol p _ = fail $ "Unsupported protocol: " ++ p
 
+parseTransferProtocol :: String -> ConnectionInfo -> ConnectionInfo -> IO TransferConnections
+parseTransferProtocol "local" cfg1 cfg2 =
+    TransferConnections <$> (connect cfg1 :: IO Local) <*> (connect cfg2 :: IO Local)
+parseTransferProtocol "libssh2" cfg1 cfg2 =
+    TransferConnections <$> (connect cfg1 :: IO LibSSH2) <*> (connect cfg2 :: IO LibSSH2)
+parseTransferProtocol "ssh-commands" cfg1 cfg2 =
+    TransferConnections <$> (connect cfg1 :: IO SSHCommands) <*> (connect cfg2 :: IO SSHCommands)
+
