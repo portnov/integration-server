@@ -11,6 +11,7 @@ import Text.Printf
 import Data.Conduit
 
 import THIS.Types
+import THIS.Util
 import THIS.Yaml
 import THIS.Protocols.Types
 
@@ -22,10 +23,6 @@ instance Protocol SSHCommands where
 
   connect cfg = return (SSHCommands cfg)
   disconnect _ = return ()
-
-rc2int :: ExitCode -> Int
-rc2int ExitSuccess = 0
-rc2int (ExitFailure n) = n
 
 runSSH :: ConnectionInfo -> [String] -> IO (Int, String)
 runSSH cfg params = do

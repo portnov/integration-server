@@ -1,11 +1,11 @@
 title: Test project
 owner: portnov
 
-directory: /home/portnov/src/integration-server/test/
+directory: /home/portnov/src/integration-server/
 
 host-by-environment:
   home: lenovo
-  work: local
+  work: this
   virtual: lenny32
 
 nginx-conf-path:

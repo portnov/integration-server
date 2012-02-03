@@ -4,6 +4,7 @@ module THIS.Util where
 import Control.Monad.Error
 import Data.Char
 import qualified Data.ByteString as B
+import System.Exit
 
 import THIS.Types
 
@@ -34,4 +35,8 @@ toBS s = B.pack $ map (fromIntegral . ord) s
 
 fromBS :: B.ByteString -> String
 fromBS bs = map (chr . fromIntegral) $ B.unpack bs
+
+rc2int :: ExitCode -> Int
+rc2int ExitSuccess = 0
+rc2int (ExitFailure n) = n
 
