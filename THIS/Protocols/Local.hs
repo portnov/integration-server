@@ -69,6 +69,10 @@ instance FilesProtocol Local where
 
   receiveTree _ from to = copyDir from to
 
+  transferFile _ from _ to = copyFile from to
+
+  transferTree _ from _ to = copyDir from to
+
 copyDir ::  FilePath -> FilePath -> IO ()
 copyDir src dst = do
   whenM (not <$> doesDirectoryExist src) $

@@ -5,8 +5,10 @@ import Control.Applicative
 import Data.Object
 import Data.Object.Yaml
 import Data.Conduit
+import System.Directory
 
 import THIS.Types
+import THIS.Util
 import THIS.Yaml
 
 data ConnectionInfo = ConnectionInfo {
@@ -48,6 +50,20 @@ class (Protocol p) => FilesProtocol p where
 
   receiveFile :: p -> FilePath -> FilePath -> IO ()
   receiveTree :: p -> FilePath -> FilePath -> IO ()
+
+  transferFile :: p -> FilePath -> p -> FilePath -> IO ()
+  transferFile srcp src dstp dst = do
+    tmp <- tempFile
+    receiveFile srcp src tmp
+    sendFile dstp tmp dst
+    removeFile tmp
+
+  transferTree :: p -> FilePath -> p -> FilePath -> IO ()
+  transferTree srcp src dstp dst = do
+    tmp <- tempFile
+    receiveTree srcp src tmp
+    sendTree dstp tmp dst
+    removeDirectoryRecursive tmp
 
   makeRemoteDirectory :: p -> FilePath -> IO ()
 

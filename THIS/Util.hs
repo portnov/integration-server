@@ -1,10 +1,12 @@
 
 module THIS.Util where
 
+import Control.Monad
 import Control.Monad.Error
 import Data.Char
 import qualified Data.ByteString as B
 import System.Exit
+import System.Random
 
 import THIS.Types
 
@@ -39,4 +41,9 @@ fromBS bs = map (chr . fromIntegral) $ B.unpack bs
 rc2int :: ExitCode -> Int
 rc2int ExitSuccess = 0
 rc2int (ExitFailure n) = n
+
+tempFile :: IO FilePath
+tempFile = do
+  r <- replicateM 5 $ randomRIO ('0', '9')
+  return $ "/tmp/this" ++ r
 

@@ -8,15 +8,10 @@ import Control.Failure
 import System.FilePath
 import System.Directory
 import System.Environment
-import System.Random
 
 import THIS.Types
+import THIS.Util
 import THIS.Yaml
-
-tempFile :: IO FilePath
-tempFile = do
-  r <- replicateM 5 $ randomRIO ('0', '9')
-  return $ "/tmp/this" ++ r
 
 readTemplate :: String -> THIS (FilePath, String)
 readTemplate name = do
