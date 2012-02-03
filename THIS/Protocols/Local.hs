@@ -4,12 +4,14 @@ module THIS.Protocols.Local where
 import Control.Applicative
 import Control.Monad
 import Control.Concurrent.STM
+import Control.Exception
 import Data.Monoid
 import Data.Conduit
 import Data.Conduit.Binary as CB
 import qualified Data.Conduit.List as CL
 import System.Process
 import System.IO
+import System.FilePath
 import System.Directory
 
 import THIS.Types
@@ -60,11 +62,34 @@ instance SendProtocol Local where
 
   makeRemoteDirectory _ path = createDirectory path
 
-  sendTree _ _ = fail $ "sendTree: not implemented yet"
+  sendTree _ from to = copyDir from to
 
 instance ReceiveProtocol Local where
   receiveFile _ from to =
     copyFile from to
 
-  receiveTree _ _ = fail $ "receiveTree: not implemented yet"
+  receiveTree _ from to = copyDir from to
+
+copyDir ::  FilePath -> FilePath -> IO ()
+copyDir src dst = do
+  whenM (not <$> doesDirectoryExist src) $
+    throw (userError "source does not exist")
+  whenM (doesFileOrDirectoryExist dst) $
+    throw (userError "destination already exists")
+
+  createDirectory dst
+  content <- getDirectoryContents src
+  let xs = filter (`notElem` [".", ".."]) content
+  forM_ xs $ \name -> do
+    let srcPath = src </> name
+    let dstPath = dst </> name
+    isDirectory <- doesDirectoryExist srcPath
+    if isDirectory
+      then copyDir srcPath dstPath
+      else copyFile srcPath dstPath
+
+  where
+    doesFileOrDirectoryExist x = orM [doesDirectoryExist x, doesFileExist x]
+    orM xs = or <$> sequence xs
+    whenM s r = s >>= flip when r
 
