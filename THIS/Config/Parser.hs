@@ -1,5 +1,7 @@
-
-module THIS.Config.Parser where
+-- | Parsers loader
+module THIS.Config.Parser
+  (loadParser
+  ) where
 
 import Control.Applicative
 import Control.Monad.Error
@@ -15,7 +17,8 @@ import THIS.Types
 import THIS.Util
 import THIS.Yaml
 
-loadParser :: FilePath -> THIS Parser
+-- | Load parser by name
+loadParser :: String -> THIS Parser
 loadParser name = do
   (_, object) <- loadYaml "parsers" name
   liftEither $ convertParser object
@@ -32,7 +35,7 @@ convertAction (name, object) = do
 convertResults :: (String, StringObject) -> Either ErrorMessage (String, ResultsRange)
 convertResults (name, object) = do
     range <- case object of
-                  Scalar s -> if all isDigit s
+                  Scalar s -> if (all isDigit s) && (not $ null s)
                                 then return $ CodesRange (read s) (read s)
                                 else return $ ResultsList [GroupName s]
                   Sequence list -> ResultsList <$> (map toResult <$> mapM getString list)
@@ -46,7 +49,7 @@ convertResults (name, object) = do
     secondString (name, Scalar s) = return (name, s)
     secondString (name, object) = failure $ "Expected scalar, but got: " ++ show object
 
-    toResult s = if all isDigit s
+    toResult s = if (all isDigit s) && (not $ null s)
                    then ReturnCode (read s)
                    else GroupName s
 

@@ -1,6 +1,8 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
-
-module THIS.Config.Global where
+-- | Global config (config.yaml) parser
+module THIS.Config.Global
+  (loadGlobalConfig
+  ) where
 
 import Control.Applicative
 import Control.Monad.Error
@@ -16,6 +18,7 @@ import THIS.Types
 import THIS.Util
 import THIS.Yaml
 
+-- | Load global configuration from config.yaml
 loadGlobalConfig :: THIS GlobalConfig
 loadGlobalConfig = do
   home <- liftIO $ getEnv "HOME"

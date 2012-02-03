@@ -1,6 +1,10 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
-
-module THIS.Config.ProjectConfig where
+-- | Project configs loader
+module THIS.Config.ProjectConfig
+  (loadProjectConfig,
+   loadHost,
+   loadCommonHosts,
+  ) where
 
 import Control.Applicative
 import Control.Monad.Error
@@ -18,15 +22,15 @@ import THIS.Util
 import THIS.Yaml
 import THIS.Templates.Text
 
-import Debug.Trace
-
-loadHost :: FilePath -> THIS (String, HostConfig)
+-- | Load host configuration by name.
+loadHost :: String -> THIS (String, HostConfig)
 loadHost path = do
   x <- liftIO (decodeFile path :: IO (Either ParseException StringObject))
   case x of
     Left err -> failure (show err)
     Right object -> liftEither $ convertHost ("", object)
 
+-- | Load common hosts (from \/etc\/this\/hosts and ~\/.config\/this\/hosts).
 loadCommonHosts :: THIS [(String, HostConfig)]
 loadCommonHosts = do
   home <- liftIO $ getEnv "HOME"
@@ -39,13 +43,22 @@ loadCommonHosts = do
       host <- loadHost path
       return (name, snd host)
 
-loadProjectConfig :: String -> [(String, String)] -> [(String, HostConfig)] -> THIS (FilePath, StringObject, ProjectConfig)
+-- | Load project config by name.
+-- Returns loaded file path, StringObject and loaded project.
+loadProjectConfig :: String                 -- ^ Project name
+                  -> Variables              -- ^ External variables
+                  -> [(String, HostConfig)] -- ^ Preloaded hosts: [(host name, host config)]
+                  -> THIS (FilePath, StringObject, ProjectConfig)
 loadProjectConfig name vars hosts = do
   (path, object) <- loadYaml "projects" name
   pc <- ErrorT $ return $ convertProject path vars hosts object
   return (path, object, pc)
 
-convertProject :: FilePath -> [(String, String)] -> [(String, HostConfig)] -> StringObject -> Either ErrorMessage ProjectConfig
+convertProject :: FilePath
+               -> Variables
+               -> [(String, HostConfig)]
+               -> StringObject
+               -> Either ErrorMessage ProjectConfig
 convertProject path vars commonHosts object = do
   dir <- get "directory" object
   let this = HostConfig {

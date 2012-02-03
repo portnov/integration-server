@@ -1,5 +1,8 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
-module THIS.Config.Executor where
+module THIS.Config.Executor
+  (loadExecutor,
+   lookupAction
+  ) where
 
 import Control.Applicative
 import Control.Monad.Error
@@ -15,7 +18,9 @@ import THIS.Util
 import THIS.Yaml
 import THIS.Templates.Text
 
-loadExecutor :: FilePath -> THIS (FilePath, Executor)
+-- | Load executor by name.
+-- Returns path to loaded executor and executor itself.
+loadExecutor :: String -> THIS (FilePath, Executor)
 loadExecutor name = do
   (path, object) <- loadYaml "executors" name
   r <- liftEither $ convertExecutor object
@@ -36,9 +41,8 @@ convertAction (name, object) = do
   return [(name, ActionConfig {
                   acCommands = cmds } )]
 
+-- | Look up for an action in the executor.
 lookupAction :: String -> Executor -> Maybe ActionConfig
-lookupAction act (Executor _ pairs) =
-  case lookup act pairs of
-    Just ac -> Just ac
-    Nothing -> lookup "$$" pairs
+lookupAction action (Executor _ pairs) =
+  lookup action pairs `mplus` lookup "$$" pairs
 

@@ -1,5 +1,13 @@
 {-# LANGUAGE ScopedTypeVariables, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
-module THIS.ConnectionsManager where
+-- | Hosts connections manager
+module THIS.ConnectionsManager
+  (Managed,
+   MTHIS,
+   manageConnections,
+   getCommandProtocol,
+   getSendProtocol,
+   getReceiveProtocol
+  ) where
 
 import Control.Monad
 import Control.Monad.Trans
