@@ -1,8 +1,9 @@
-
+{-# LANGUAGE FlexibleContexts #-}
 module THIS.Util where
 
 import Control.Monad
 import Control.Monad.Error
+import Control.Failure
 import Data.Char
 import qualified Data.ByteString as B
 import System.Exit
@@ -31,6 +32,10 @@ liftEitherWith fn x =
 liftError :: (e -> e') -> Either e a -> Either e' a
 liftError fn (Left e)  = Left (fn e)
 liftError _  (Right v) = Right v
+
+forceEither :: (Monad m, Failure ErrorMessage m) => Either ErrorMessage a -> m a
+forceEither (Right x) = return x
+forceEither (Left e)  = failure e
 
 toBS :: String -> B.ByteString
 toBS s = B.pack $ map (fromIntegral . ord) s

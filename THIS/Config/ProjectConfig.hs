@@ -4,6 +4,7 @@ module THIS.Config.ProjectConfig
   (loadProjectConfig,
    loadHost,
    loadCommonHosts,
+   usedHosts
   ) where
 
 import Control.Applicative
@@ -54,6 +55,9 @@ loadProjectConfig name vars hosts = do
   pc <- ErrorT $ return $ convertProject path vars hosts object
   return (path, object, pc)
 
+usedHosts :: ProjectConfig -> [HostConfig]
+usedHosts pc = map (phWhere . snd) (pcPhases pc)
+
 convertProject :: FilePath
                -> Variables
                -> [(String, HostConfig)]
@@ -65,8 +69,10 @@ convertProject path vars commonHosts object = do
                hcHostname = "localhost",
                hcPath     = dir,
                hcVM       = Nothing,
-               hcParams   = [("host", "localhost"),
-                             ("protocol", "local") ] }
+               hcCommandsProtocol = "local",
+               hcSendProtocol     = "local",
+               hcReceiveProtocol  = "local",
+               hcParams   = [("host", "localhost")] }
   title <- getOptional "title" (takeFileName path) object
   owner <- getOptional "owner" "admin" object
   hosts <- mapM convertHost =<< getOptional "hosts" [] object
@@ -101,12 +107,19 @@ convertHost (name, object) = do
                       <*> getOptional "snapshot" "" object
                       <*> getOptional "startup-time" 10 object )
             _ -> failure $ "Unknown host type: " ++ ht
+  generic <- getOptional "protocol" "libssh2" object
+  cmdP    <- getOptional "command-protocol" generic object
+  sendP   <- getOptional "send-protocol"    cmdP    object
+  recvP   <- getOptional "receive-protocol" cmdP    object
   params <- getPairs object
   return (name, HostConfig {
              hcHostname = hostname,
              hcPath = path,
              hcVM = mbvm,
-             hcParams = params } )
+             hcParams = params,
+             hcCommandsProtocol = cmdP,
+             hcSendProtocol = sendP,
+             hcReceiveProtocol = recvP } )
 
 convertPhase :: FilePath -> StringObject -> [(String, String)] -> [(String, HostConfig)] -> (String, StringObject) -> Either ErrorMessage (String, Phase)
 convertPhase path project vars hosts (name, object) = do

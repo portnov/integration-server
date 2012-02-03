@@ -53,7 +53,7 @@ execute gc projectName phase extVars = do
   pid <- runDB dbc $ checkProject ppath projectName pc
   case lookup phase (pcPhases pc) of
     Nothing -> lift $ putStrLn $ "No such phase: " ++ phase
-    Just ph -> do
+    Just ph -> manageConnections (usedHosts pc) $ do
       let host = phWhere ph
       liftIO $ putStrLn $ "Executing " ++ phase ++ " on " ++ hcHostname host
       case hcVM host of
@@ -61,12 +61,11 @@ execute gc projectName phase extVars = do
         Just vm -> do
                    liftIO $ putStrLn $ "Running VM"
                    liftIO $ runVM object (hcParams host) vm
-      (exePath, exe) <- loadExecutor (phExecutor ph)
-      parser <- loadParser (phParser ph)
+      (exePath, exe) <- lift $ loadExecutor (phExecutor ph)
+      parser <- lift $ loadParser (phParser ph)
       let phaseEnvironment = environment pc ph extVars
-      manageConnections (hcParams host) $ do
-          createFiles (hcHostname host) (hcPath host) (phCreateFiles ph) phaseEnvironment
-          executeActions dbc pid host phase ph exePath exe parser object phaseEnvironment
+      createFiles host (phCreateFiles ph) phaseEnvironment
+      executeActions dbc pid host phase ph exePath exe parser object phaseEnvironment
       case hcVM host of
         Nothing -> return ()
         Just vm -> when (phShutdownVM ph) $ do
@@ -95,7 +94,7 @@ executeActions dbc pid host phase ph exePath exe parser object phaseEnvironment 
                         else exActions exe
                  else phActions ph
   -- Connect to remote host
-  cmdP <- getCommandConnection (hcHostname host)
+  cmdP <- getCommandConnection host
   liftIO $ chdirA cmdP (hcPath host)
   forM_ actions $ \action -> do
     case lookupAction action exe of
@@ -125,13 +124,13 @@ executeActions dbc pid host phase ph exePath exe parser object phaseEnvironment 
           runDB dbc $ finishAction arid exitCode finalResult
 
 -- | Create files by templates
-createFiles :: String             -- ^ Host name
-            -> FilePath           -- ^ Remote base path
+createFiles :: HostConfig
             -> [(String, String)] -- ^ (template name, file path)
             -> Variables          -- ^ Environment for templates
             -> MTHIS ()
-createFiles hostname remoteBase pairs env = when (not $ null pairs) $ do
-    send <- getSendConnection hostname
+createFiles host pairs env = when (not $ null pairs) $ do
+    send <- getSendConnection host
+    let remoteBase = hcPath host
     lift $ forM_ pairs $ \(template, path) -> do
               temp <- evalTextFile (Mapping []) env template
               liftIO $ putStrLn $ "Sending file: " ++ path

@@ -53,6 +53,9 @@ data HostConfig = HostConfig {
      hcHostname :: String,
      hcPath :: FilePath,
      hcVM :: Maybe VMConfig,
+     hcCommandsProtocol :: String,
+     hcSendProtocol :: String,
+     hcReceiveProtocol :: String,
      hcParams :: Variables }
   deriving (Eq, Show)
 

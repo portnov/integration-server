@@ -80,3 +80,5 @@ receiveTreeA :: AnyFilesConnection -> FilePath -> FilePath -> IO ()
 receiveTreeA (AnyFilesConnection p) remote local =
   receiveTree p remote local
 
+-- transferFiles :: HostConfig -> FilePath -> HostConfig -> FilePath -> MTHIS ()
+-- transferFiles srchost src dsthost dst = do
