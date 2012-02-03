@@ -7,10 +7,13 @@ import Data.Object.Yaml
 import THIS.Types
 import THIS.Yaml
 import THIS.Protocols.Types
+import THIS.Protocols.Local
 import THIS.Protocols.LibSSH2
 import THIS.Protocols.SSHCommands
 
 parseProtocol :: String -> ConnectionInfo -> IO AnyConnection
+parseProtocol "local" cfg =
+    AnyConnection <$> (connect cfg :: IO Local)
 parseProtocol "libssh2" cfg =
     AnyConnection <$> (connect cfg :: IO LibSSH2)
 parseProtocol "ssh-commnands" cfg =
@@ -18,6 +21,8 @@ parseProtocol "ssh-commnands" cfg =
 parseProtocol p _ = fail $ "Unsupported protocol: " ++ p
 
 parseCommandProtocol :: String -> ConnectionInfo -> IO AnyCommandConnection
+parseCommandProtocol "local" cfg =
+    AnyCommandConnection <$> (connect cfg :: IO Local)
 parseCommandProtocol "libssh2" cfg =
     AnyCommandConnection <$> (connect cfg :: IO LibSSH2)
 parseCommandProtocol "ssh-commnands" cfg =
@@ -25,6 +30,8 @@ parseCommandProtocol "ssh-commnands" cfg =
 parseCommandProtocol p _ = fail $ "Unsupported protocol: " ++ p
 
 parseSendProtocol :: String -> ConnectionInfo -> IO AnySendConnection
+parseSendProtocol "local" cfg =
+    AnySendConnection <$> (connect cfg :: IO Local)
 parseSendProtocol "libssh2" cfg =
     AnySendConnection <$> (connect cfg :: IO LibSSH2)
 parseSendProtocol "ssh-commnands" cfg =
@@ -32,6 +39,8 @@ parseSendProtocol "ssh-commnands" cfg =
 parseSendProtocol p _ = fail $ "Unsupported protocol: " ++ p
 
 parseReceiveProtocol :: String -> ConnectionInfo -> IO AnyReceiveConnection
+parseReceiveProtocol "local" cfg =
+    AnyReceiveConnection <$> (connect cfg :: IO Local)
 parseReceiveProtocol "libssh2" cfg =
     AnyReceiveConnection <$> (connect cfg :: IO LibSSH2)
 parseReceiveProtocol "ssh-commnands" cfg =

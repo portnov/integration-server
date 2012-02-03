@@ -11,11 +11,9 @@ import Data.Text (Text)
 import Data.Char
 
 import THIS.Types
+import THIS.Util
 import THIS.Database.Types
 import THIS.Database.Entities
-
-toBS :: String -> B.ByteString
-toBS s = B.pack $ map (fromIntegral . ord) s
 
 runDB :: (MonadIO m) => DBConfig -> DB a -> m a
 runDB dbc db = do

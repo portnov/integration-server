@@ -2,6 +2,8 @@
 module THIS.Util where
 
 import Control.Monad.Error
+import Data.Char
+import qualified Data.ByteString as B
 
 import THIS.Types
 
@@ -26,4 +28,10 @@ liftEitherWith fn x =
 liftError :: (e -> e') -> Either e a -> Either e' a
 liftError fn (Left e)  = Left (fn e)
 liftError _  (Right v) = Right v
+
+toBS :: String -> B.ByteString
+toBS s = B.pack $ map (fromIntegral . ord) s
+
+fromBS :: B.ByteString -> String
+fromBS bs = map (chr . fromIntegral) $ B.unpack bs
 

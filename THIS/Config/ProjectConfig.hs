@@ -65,7 +65,8 @@ convertProject path vars commonHosts object = do
                hcHostname = "localhost",
                hcPath     = dir,
                hcVM       = Nothing,
-               hcParams   = [("host", "localhost")] }
+               hcParams   = [("host", "localhost"),
+                             ("protocol", "local") ] }
   title <- getOptional "title" (takeFileName path) object
   owner <- getOptional "owner" "admin" object
   hosts <- mapM convertHost =<< getOptional "hosts" [] object
