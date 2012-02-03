@@ -1,9 +1,13 @@
-{-# LANGUAGE ExistentialQuantification, TypeFamilies #-}
+{-# LANGUAGE ExistentialQuantification, TypeFamilies, FlexibleInstances, MultiParamTypeClasses #-}
 module THIS.Protocols.Types where
 
 import Control.Applicative
+import Control.Failure
+import Control.Monad.State
+import Control.Monad.Error
 import Data.Object
 import Data.Object.Yaml
+import qualified Data.Map as M
 import Data.Conduit
 import System.Directory
 
@@ -69,4 +73,16 @@ class (Protocol p) => FilesProtocol p where
 
 data AnyFilesConnection =
   forall p. FilesProtocol p => AnyFilesConnection p
+
+data Connections = Connections {
+    commandConnections :: M.Map String AnyCommandConnection,
+    sendConnections    :: M.Map String AnyFilesConnection,
+    receiveConnections :: M.Map String AnyFilesConnection }
+
+type Managed m a = StateT Connections m a
+
+type MTHIS a = StateT Connections (ErrorT ErrorMessage IO) a
+
+instance (Monad m, Failure e m) => Failure e (StateT Connections m) where
+  failure e = lift (failure e)
 

@@ -1,9 +1,7 @@
 {-# LANGUAGE ScopedTypeVariables, FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 -- | Hosts connections manager
-module THIS.ConnectionsManager
-  (Managed,
-   MTHIS,
-   manageConnections,
+module THIS.Protocols.Manager
+  (manageConnections,
    getCommandConnection,
    getSendConnection,
    getReceiveConnection
@@ -25,18 +23,6 @@ import THIS.Yaml
 import THIS.Protocols.Types
 import THIS.Protocols.Parse
 import THIS.Protocols
-
-data Connections = Connections {
-    commandConnections :: M.Map String AnyCommandConnection,
-    sendConnections    :: M.Map String AnyFilesConnection,
-    receiveConnections :: M.Map String AnyFilesConnection }
-
-type Managed m a = StateT Connections m a
-
-type MTHIS a = StateT Connections (ErrorT ErrorMessage IO) a
-
-instance (Monad m, Failure e m) => Failure e (StateT Connections m) where
-  failure e = lift (failure e)
 
 manageConnections :: (MonadIO m, Failure ErrorMessage m) => [HostConfig] -> Managed m a -> m a
 manageConnections hosts fn = do

@@ -19,9 +19,9 @@ import THIS.Yaml
 import THIS.Config.ProjectConfig
 import THIS.Config.Executor
 import THIS.Config.Parser
-import THIS.ConnectionsManager
 import THIS.Protocols
 import THIS.Protocols.Types
+import THIS.Protocols.Manager
 import THIS.Templates.Text
 import THIS.Hypervisor
 import THIS.Parse
