@@ -26,16 +26,16 @@ import THIS.Yaml
 import THIS.Protocols.Types
 import THIS.Protocols.Parse
 
-lookupDefault :: String -> String -> [(String, String)] -> String
+lookupDefault :: String -> String -> Variables -> String
 lookupDefault key def pairs = fromMaybe def $ lookup key pairs
 
-lookupForce :: String -> [(String, String)] -> Either ErrorMessage String
+lookupForce :: String -> Variables -> Either ErrorMessage String
 lookupForce key pairs =
   case lookup key pairs of
     Nothing -> failure $ "Key not found: " ++ key
     Just v  -> return v
 
-loadConnectionInfo :: [(String, String)] -> Either ErrorMessage ConnectionInfo
+loadConnectionInfo :: Variables -> Either ErrorMessage ConnectionInfo
 loadConnectionInfo pairs = ConnectionInfo
     <$> lookupForce "host" pairs
     <*> (readInt $ lookupDefault "port" "22" pairs)

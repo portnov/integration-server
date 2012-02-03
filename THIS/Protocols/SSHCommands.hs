@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies, DeriveDataTypeable #-}
 module THIS.Protocols.SSHCommands where
 
 import Control.Applicative
@@ -9,6 +9,7 @@ import System.Process
 import System.Exit
 import Text.Printf
 import Data.Conduit
+import Data.Generics
 
 import THIS.Types
 import THIS.Util
@@ -16,6 +17,7 @@ import THIS.Yaml
 import THIS.Protocols.Types
 
 data SSHCommands = SSHCommands ConnectionInfo
+  deriving (Data, Typeable)
 
 instance Protocol SSHCommands where
   initializeProtocol _ = return ()

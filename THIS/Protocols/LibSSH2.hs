@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies, DeriveDataTypeable #-}
 module THIS.Protocols.LibSSH2 where
 
 import Control.Applicative
@@ -6,6 +6,7 @@ import Control.Concurrent.STM
 import Control.Monad
 import Data.Monoid
 import Data.Conduit
+import Data.Generics
 import Network
 import Network.Socket hiding (connect)
 import System.IO
@@ -21,6 +22,7 @@ import THIS.Yaml
 import THIS.Protocols.Types
 
 data LibSSH2 = LibSSH2 Session (TMVar FilePath)
+  deriving (Typeable)
 
 instance Protocol LibSSH2 where
   initializeProtocol _ = do

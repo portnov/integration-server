@@ -1,10 +1,11 @@
-{-# LANGUAGE ExistentialQuantification, TypeFamilies, FlexibleInstances, MultiParamTypeClasses #-}
+{-# LANGUAGE ExistentialQuantification, TypeFamilies, FlexibleInstances, MultiParamTypeClasses, DeriveDataTypeable #-}
 module THIS.Protocols.Types where
 
 import Control.Applicative
 import Control.Failure
 import Control.Monad.State
 import Control.Monad.Error
+import Data.Generics
 import Data.Object
 import Data.Object.Yaml
 import qualified Data.Map as M
@@ -22,12 +23,12 @@ data ConnectionInfo = ConnectionInfo {
   cKnownHosts :: FilePath,
   cPublicKey :: FilePath,
   cPrivateKey :: FilePath }
-  deriving (Eq)
+  deriving (Eq, Data, Typeable)
 
 instance Show ConnectionInfo where
   show cfg = cUsername cfg ++ "@" ++ cHost cfg ++ ":" ++ show (cPort cfg)
 
-class Protocol p where
+class (Typeable p) => Protocol p where
   initializeProtocol :: p -> IO ()
   deinitializeProtocol :: p -> IO ()
 

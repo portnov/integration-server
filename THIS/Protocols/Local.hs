@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE TypeFamilies, DeriveDataTypeable #-}
 module THIS.Protocols.Local where
 
 import Control.Applicative
@@ -9,6 +9,7 @@ import Data.Monoid
 import Data.Conduit
 import Data.Conduit.Binary as CB
 import qualified Data.Conduit.List as CL
+import Data.Generics
 import System.Process
 import System.IO
 import System.FilePath
@@ -20,6 +21,7 @@ import THIS.Yaml
 import THIS.Protocols.Types
 
 data Local = Local
+  deriving (Data, Typeable)
 
 instance Protocol Local where
   initializeProtocol _ = return ()
