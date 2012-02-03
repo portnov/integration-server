@@ -14,6 +14,7 @@ import Control.Monad.Trans
 import Control.Monad.State as St
 import Control.Monad.Error
 import Control.Failure
+import Data.Typeable
 import Data.Maybe
 import Data.Object
 import Data.Object.Yaml
@@ -59,6 +60,11 @@ manageConnections hosts fn = do
               r <- fn
               freeAllConnections
               return r) manager
+
+pairFileConnections :: AnyFilesConnection -> AnyFilesConnection -> Maybe TransferConnections
+pairFileConnections (AnyFilesConnection p1) (AnyFilesConnection p2) = do
+  p2' <- cast p2
+  return $ TransferConnections p1 p2'
 
 getCommandConnection :: (MonadIO m, Failure ErrorMessage m) => HostConfig -> Managed m AnyCommandConnection
 getCommandConnection host = do
@@ -109,12 +115,16 @@ getTransferConnections src dst = do
            Just tc -> return (Just tc)
            Nothing -> do
                let proto = hcReceiveProtocol src
-               srcci <- forceEither $ loadConnectionInfo (hcParams src)
-               dstci <- forceEither $ loadConnectionInfo (hcParams dst)
-               new   <- liftIO $ parseTransferProtocol proto srcci dstci
-               let m = M.insert pair new (transferConnections prs)
-               St.put $ prs { transferConnections = m }
-               return (Just new)
+               srcp <- getReceiveConnection src
+               dstp <- getSendConnection    dst
+               case pairFileConnections srcp dstp of
+                 Nothing -> do
+                   liftIO $ putStrLn $ "Unexpected: cannot pair connections to " ++ hcHostname src ++ " and " ++ hcHostname dst
+                   return Nothing
+                 Just new -> do
+                   let m = M.insert pair new (transferConnections prs)
+                   St.put $ prs { transferConnections = m }
+                   return (Just new)
     else return Nothing
 
 freeAllConnections :: (MonadIO m) => Managed m ()
