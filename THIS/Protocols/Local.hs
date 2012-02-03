@@ -56,7 +56,7 @@ instance CommandProtocol Local where
 
   changeWorkingDirectory _ dir = setCurrentDirectory dir
 
-instance SendProtocol Local where
+instance FilesProtocol Local where
   sendFile _  from to =
     copyFile from to
 
@@ -64,7 +64,6 @@ instance SendProtocol Local where
 
   sendTree _ from to = copyDir from to
 
-instance ReceiveProtocol Local where
   receiveFile _ from to =
     copyFile from to
 

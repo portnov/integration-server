@@ -28,8 +28,8 @@ import THIS.Protocols
 
 data Connections = Connections {
     commandConnections :: M.Map String AnyCommandConnection,
-    sendConnections :: M.Map String AnySendConnection,
-    receiveConnections :: M.Map String AnyReceiveConnection,
+    sendConnections :: M.Map String AnyFilesConnection,
+    receiveConnections :: M.Map String AnyFilesConnection,
     connectionInfo :: ConnectionInfo,
     commandProtoName :: String,
     sendProtoName :: String,
@@ -83,7 +83,7 @@ getCommandConnection host = do
                liftIO $ atomically $ writeTVar var p
                return new
 
-getSendConnection :: (MonadIO m) => String -> Managed m AnySendConnection
+getSendConnection :: (MonadIO m) => String -> Managed m AnyFilesConnection
 getSendConnection host = do
   var <- ask
   prs <- liftIO $ atomically $ readTVar var
@@ -98,7 +98,7 @@ getSendConnection host = do
                liftIO $ atomically $ writeTVar var p
                return new
 
-getReceiveConnection :: (MonadIO m) => String -> Managed m AnyReceiveConnection
+getReceiveConnection :: (MonadIO m) => String -> Managed m AnyFilesConnection
 getReceiveConnection host = do
   var <- ask
   prs <- liftIO $ atomically $ readTVar var
@@ -130,13 +130,13 @@ freeSendConnections :: (MonadIO m) => Managed m ()
 freeSendConnections = do
   var <- ask
   prs <- liftIO $ atomically $ readTVar var
-  forM_ (M.elems $ sendConnections prs) $ \(AnySendConnection p) ->
+  forM_ (M.elems $ sendConnections prs) $ \(AnyFilesConnection p) ->
       liftIO $ disconnect p
 
 freeReceiveConnections :: (MonadIO m) => Managed m ()
 freeReceiveConnections = do
   var <- ask
   prs <- liftIO $ atomically $ readTVar var
-  forM_ (M.elems $ receiveConnections prs) $ \(AnyReceiveConnection p) ->
+  forM_ (M.elems $ receiveConnections prs) $ \(AnyFilesConnection p) ->
       liftIO $ disconnect p
 

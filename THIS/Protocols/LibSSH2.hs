@@ -71,7 +71,7 @@ instance CommandProtocol LibSSH2 where
   changeWorkingDirectory (LibSSH2 _ var) dir =
       atomically $ putTMVar var dir
 
-instance SendProtocol LibSSH2 where
+instance FilesProtocol LibSSH2 where
   sendFile (LibSSH2 session _) local remote = do
     sz <- scpSendFile session 0o644 local remote
     return ()
@@ -86,7 +86,6 @@ instance SendProtocol LibSSH2 where
 
   sendTree _ _ _ = fail "sendTree: Not implemented"
     
-instance ReceiveProtocol LibSSH2 where
   receiveFile (LibSSH2 session _) remote local = do
     sz <- scpReceiveFile session remote local
     return ()

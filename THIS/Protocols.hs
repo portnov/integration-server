@@ -60,23 +60,23 @@ getExitStatusA (AnyRCHandle h) = getExitStatus h
 chdirA :: AnyCommandConnection -> FilePath -> IO ()
 chdirA (AnyCommandConnection p) dir = changeWorkingDirectory p dir
 
-sendFileA :: AnySendConnection -> FilePath -> FilePath -> IO ()
-sendFileA (AnySendConnection p) local remote =
+sendFileA :: AnyFilesConnection -> FilePath -> FilePath -> IO ()
+sendFileA (AnyFilesConnection p) local remote =
   sendFile p local remote
 
-makeRemoteDirectoryA :: AnySendConnection -> FilePath -> IO ()
-makeRemoteDirectoryA (AnySendConnection p) path =
+makeRemoteDirectoryA :: AnyFilesConnection -> FilePath -> IO ()
+makeRemoteDirectoryA (AnyFilesConnection p) path =
   makeRemoteDirectory p path
 
-sendTreeA :: AnySendConnection -> FilePath -> FilePath -> IO ()
-sendTreeA (AnySendConnection p) local remote =
+sendTreeA :: AnyFilesConnection -> FilePath -> FilePath -> IO ()
+sendTreeA (AnyFilesConnection p) local remote =
   sendTree p local remote
 
-receiveFileA :: AnyReceiveConnection -> FilePath -> FilePath -> IO ()
-receiveFileA (AnyReceiveConnection p) remote local =
+receiveFileA :: AnyFilesConnection -> FilePath -> FilePath -> IO ()
+receiveFileA (AnyFilesConnection p) remote local =
   receiveFile p remote local
 
-receiveTreeA :: AnyReceiveConnection -> FilePath -> FilePath -> IO ()
-receiveTreeA (AnyReceiveConnection p) remote local =
+receiveTreeA :: AnyFilesConnection -> FilePath -> FilePath -> IO ()
+receiveTreeA (AnyFilesConnection p) remote local =
   receiveTree p remote local
 

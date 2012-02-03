@@ -29,21 +29,21 @@ parseCommandProtocol "ssh-commnands" cfg =
     AnyCommandConnection <$> (connect cfg :: IO SSHCommands)
 parseCommandProtocol p _ = fail $ "Unsupported protocol: " ++ p
 
-parseSendProtocol :: String -> ConnectionInfo -> IO AnySendConnection
+parseSendProtocol :: String -> ConnectionInfo -> IO AnyFilesConnection
 parseSendProtocol "local" cfg =
-    AnySendConnection <$> (connect cfg :: IO Local)
+    AnyFilesConnection <$> (connect cfg :: IO Local)
 parseSendProtocol "libssh2" cfg =
-    AnySendConnection <$> (connect cfg :: IO LibSSH2)
+    AnyFilesConnection <$> (connect cfg :: IO LibSSH2)
 parseSendProtocol "ssh-commnands" cfg =
-    AnySendConnection <$> (connect cfg :: IO SSHCommands)
+    AnyFilesConnection <$> (connect cfg :: IO SSHCommands)
 parseSendProtocol p _ = fail $ "Unsupported protocol: " ++ p
 
-parseReceiveProtocol :: String -> ConnectionInfo -> IO AnyReceiveConnection
+parseReceiveProtocol :: String -> ConnectionInfo -> IO AnyFilesConnection
 parseReceiveProtocol "local" cfg =
-    AnyReceiveConnection <$> (connect cfg :: IO Local)
+    AnyFilesConnection <$> (connect cfg :: IO Local)
 parseReceiveProtocol "libssh2" cfg =
-    AnyReceiveConnection <$> (connect cfg :: IO LibSSH2)
+    AnyFilesConnection <$> (connect cfg :: IO LibSSH2)
 parseReceiveProtocol "ssh-commnands" cfg =
-    AnyReceiveConnection <$> (connect cfg :: IO SSHCommands)
+    AnyFilesConnection <$> (connect cfg :: IO SSHCommands)
 parseReceiveProtocol p _ = fail $ "Unsupported protocol: " ++ p
 

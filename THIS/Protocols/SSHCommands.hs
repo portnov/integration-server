@@ -48,7 +48,7 @@ instance CommandProtocol SSHCommands where
 
   changeWorkingDirectory _ _ = fail "chdir not implemented"
 
-instance SendProtocol SSHCommands where
+instance FilesProtocol SSHCommands where
   sendFile (SSHCommands cfg) local remote = do
     let command = printf "scp %s %s:%s" local (show cfg) remote
     ec <- system command
@@ -67,7 +67,6 @@ instance SendProtocol SSHCommands where
       ExitSuccess -> return ()
       ExitFailure n -> fail $ printf "SCP: %s: error: %s" command (show n)
 
-instance ReceiveProtocol SSHCommands where
   receiveFile (SSHCommands cfg) remote local = do
     let command = printf "scp %s:%s %s" (show cfg) remote local
     ec <- system command
