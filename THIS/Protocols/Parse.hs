@@ -10,31 +10,31 @@ import THIS.Protocols.Types
 import THIS.Protocols.LibSSH2
 import THIS.Protocols.SSHCommands
 
-parseProtocol :: String -> ConnectionInfo -> IO AnyProtocol
+parseProtocol :: String -> ConnectionInfo -> IO AnyConnection
 parseProtocol "libssh2" cfg =
-    AnyProtocol <$> (connect cfg :: IO LibSSH2)
+    AnyConnection <$> (connect cfg :: IO LibSSH2)
 parseProtocol "ssh-commnands" cfg =
-    AnyProtocol <$> (connect cfg :: IO SSHCommands)
+    AnyConnection <$> (connect cfg :: IO SSHCommands)
 parseProtocol p _ = fail $ "Unsupported protocol: " ++ p
 
-parseCommandProtocol :: String -> ConnectionInfo -> IO AnyCommandProtocol
+parseCommandProtocol :: String -> ConnectionInfo -> IO AnyCommandConnection
 parseCommandProtocol "libssh2" cfg =
-    AnyCommandProtocol <$> (connect cfg :: IO LibSSH2)
+    AnyCommandConnection <$> (connect cfg :: IO LibSSH2)
 parseCommandProtocol "ssh-commnands" cfg =
-    AnyCommandProtocol <$> (connect cfg :: IO SSHCommands)
+    AnyCommandConnection <$> (connect cfg :: IO SSHCommands)
 parseCommandProtocol p _ = fail $ "Unsupported protocol: " ++ p
 
-parseSendProtocol :: String -> ConnectionInfo -> IO AnySendProtocol
+parseSendProtocol :: String -> ConnectionInfo -> IO AnySendConnection
 parseSendProtocol "libssh2" cfg =
-    AnySendProtocol <$> (connect cfg :: IO LibSSH2)
+    AnySendConnection <$> (connect cfg :: IO LibSSH2)
 parseSendProtocol "ssh-commnands" cfg =
-    AnySendProtocol <$> (connect cfg :: IO SSHCommands)
+    AnySendConnection <$> (connect cfg :: IO SSHCommands)
 parseSendProtocol p _ = fail $ "Unsupported protocol: " ++ p
 
-parseReceiveProtocol :: String -> ConnectionInfo -> IO AnyReceiveProtocol
+parseReceiveProtocol :: String -> ConnectionInfo -> IO AnyReceiveConnection
 parseReceiveProtocol "libssh2" cfg =
-    AnyReceiveProtocol <$> (connect cfg :: IO LibSSH2)
+    AnyReceiveConnection <$> (connect cfg :: IO LibSSH2)
 parseReceiveProtocol "ssh-commnands" cfg =
-    AnyReceiveProtocol <$> (connect cfg :: IO SSHCommands)
+    AnyReceiveConnection <$> (connect cfg :: IO SSHCommands)
 parseReceiveProtocol p _ = fail $ "Unsupported protocol: " ++ p
 

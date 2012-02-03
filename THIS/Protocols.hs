@@ -46,37 +46,37 @@ deinitializeProtocols = do
   deinitializeProtocol (LibSSH2 undefined undefined)
   deinitializeProtocol (SSHCommands undefined)
 
-disconnectA :: AnyProtocol -> IO ()
-disconnectA (AnyProtocol p) = disconnect p
+disconnectA :: AnyConnection -> IO ()
+disconnectA (AnyConnection p) = disconnect p
 
-runCommandsA :: AnyCommandProtocol -> [String] -> IO (AnyRCHandle, Source IO String)
-runCommandsA (AnyCommandProtocol p) commands = do
+runCommandsA :: AnyCommandConnection -> [String] -> IO (AnyRCHandle, Source IO String)
+runCommandsA (AnyCommandConnection p) commands = do
   (h, r) <- runCommands p commands
   return (AnyRCHandle h, r)
 
 getExitStatusA :: AnyRCHandle -> IO Int
 getExitStatusA (AnyRCHandle h) = getExitStatus h
 
-chdirA :: AnyCommandProtocol -> FilePath -> IO ()
-chdirA (AnyCommandProtocol p) dir = changeWorkingDirectory p dir
+chdirA :: AnyCommandConnection -> FilePath -> IO ()
+chdirA (AnyCommandConnection p) dir = changeWorkingDirectory p dir
 
-sendFileA :: AnySendProtocol -> FilePath -> FilePath -> IO ()
-sendFileA (AnySendProtocol p) local remote =
+sendFileA :: AnySendConnection -> FilePath -> FilePath -> IO ()
+sendFileA (AnySendConnection p) local remote =
   sendFile p local remote
 
-makeRemoteDirectoryA :: AnySendProtocol -> FilePath -> IO ()
-makeRemoteDirectoryA (AnySendProtocol p) path =
+makeRemoteDirectoryA :: AnySendConnection -> FilePath -> IO ()
+makeRemoteDirectoryA (AnySendConnection p) path =
   makeRemoteDirectory p path
 
-sendTreeA :: AnySendProtocol -> FilePath -> FilePath -> IO ()
-sendTreeA (AnySendProtocol p) local remote =
+sendTreeA :: AnySendConnection -> FilePath -> FilePath -> IO ()
+sendTreeA (AnySendConnection p) local remote =
   sendTree p local remote
 
-receiveFileA :: AnyReceiveProtocol -> FilePath -> FilePath -> IO ()
-receiveFileA (AnyReceiveProtocol p) remote local =
+receiveFileA :: AnyReceiveConnection -> FilePath -> FilePath -> IO ()
+receiveFileA (AnyReceiveConnection p) remote local =
   receiveFile p remote local
 
-receiveTreeA :: AnyReceiveProtocol -> FilePath -> FilePath -> IO ()
-receiveTreeA (AnyReceiveProtocol p) remote local =
+receiveTreeA :: AnyReceiveConnection -> FilePath -> FilePath -> IO ()
+receiveTreeA (AnyReceiveConnection p) remote local =
   receiveTree p remote local
 

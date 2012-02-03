@@ -95,7 +95,7 @@ executeActions dbc pid host phase ph exePath exe parser object phaseEnvironment 
                         else exActions exe
                  else phActions ph
   -- Connect to remote host
-  cmdP <- getCommandProtocol (hcHostname host)
+  cmdP <- getCommandConnection (hcHostname host)
   liftIO $ chdirA cmdP (hcPath host)
   forM_ actions $ \action -> do
     case lookupAction action exe of
@@ -131,7 +131,7 @@ createFiles :: String             -- ^ Host name
             -> Variables          -- ^ Environment for templates
             -> MTHIS ()
 createFiles hostname remoteBase pairs env = when (not $ null pairs) $ do
-    send <- getSendProtocol hostname
+    send <- getSendConnection hostname
     lift $ forM_ pairs $ \(template, path) -> do
               temp <- evalTextFile (Mapping []) env template
               liftIO $ putStrLn $ "Sending file: " ++ path

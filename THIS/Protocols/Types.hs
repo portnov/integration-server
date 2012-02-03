@@ -28,7 +28,7 @@ class Protocol p where
   connect :: ConnectionInfo -> IO p
   disconnect :: p -> IO ()
 
-data AnyProtocol = forall p. Protocol p => AnyProtocol p
+data AnyConnection = forall p. Protocol p => AnyConnection p
 
 class (Protocol p) => CommandProtocol p where
   data RCHandle p
@@ -36,8 +36,8 @@ class (Protocol p) => CommandProtocol p where
   runCommands :: p -> [String] -> IO (RCHandle p, Source IO String)
   getExitStatus :: RCHandle p -> IO Int
 
-data AnyCommandProtocol =
-  forall p. CommandProtocol p => AnyCommandProtocol p
+data AnyCommandConnection =
+  forall p. CommandProtocol p => AnyCommandConnection p
 
 data AnyRCHandle =
   forall p. CommandProtocol p => AnyRCHandle (RCHandle p)
@@ -48,13 +48,13 @@ class (Protocol p) => SendProtocol p where
 
   sendTree :: p -> FilePath -> FilePath -> IO ()
 
-data AnySendProtocol =
-  forall p. SendProtocol p => AnySendProtocol p
+data AnySendConnection =
+  forall p. SendProtocol p => AnySendConnection p
 
 class (Protocol p) => ReceiveProtocol p where
   receiveFile :: p -> FilePath -> FilePath -> IO ()
   receiveTree :: p -> FilePath -> FilePath -> IO ()
 
-data AnyReceiveProtocol =
-  forall p. ReceiveProtocol p => AnyReceiveProtocol p
+data AnyReceiveConnection =
+  forall p. ReceiveProtocol p => AnyReceiveConnection p
 
