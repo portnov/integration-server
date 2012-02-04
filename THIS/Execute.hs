@@ -40,6 +40,12 @@ actionCommands action exe =
 environment :: ProjectConfig -> Phase -> Variables -> Variables
 environment pc ph ext = phEnvironment ph ++ hcParams (phWhere ph) ++ pcEnvironment pc ++ ext
 
+getHost :: String -> [(String, HostConfig)] -> THIS HostConfig
+getHost name pairs =
+  case lookup name pairs of
+    Just hc -> return hc
+    Nothing -> failure $ "Host not defined: " ++ name
+
 -- | Execute a phase for the project
 execute :: GlobalConfig
         -> String           -- ^ Project name
@@ -49,31 +55,41 @@ execute :: GlobalConfig
 execute gc projectName phase extVars = do
   chosts <- loadCommonHosts
   (ppath, object, pc) <- loadProjectConfig projectName extVars chosts
+  liftIO $ setCurrentDirectory (pcDirectory pc)
   let dbc = gcDatabase gc
   pid <- runDB dbc $ checkProject ppath projectName pc
   case lookup phase (pcPhases pc) of
     Nothing -> lift $ putStrLn $ "No such phase: " ++ phase
-    Just ph -> manageConnections (usedHosts pc) $ do
-      let host = phWhere ph
-      liftIO $ putStrLn $ "Executing " ++ phase ++ " on " ++ hcHostname host
-      case hcVM host of
-        Nothing -> return ()
-        Just vm -> do
-                   liftIO $ putStrLn $ "Running VM"
-                   liftIO $ runVM object (hcParams host) vm
-      (exePath, exe) <- lift $ loadExecutor (phExecutor ph)
-      parser <- lift $ loadParser (phParser ph)
-      let phaseEnvironment = environment pc ph extVars
-      createFiles host (phCreateFiles ph) phaseEnvironment
-      executeActions dbc pid host phase ph exePath exe parser object phaseEnvironment
-      case hcVM host of
-        Nothing -> return ()
-        Just vm -> when (phShutdownVM ph) $ do
-                       liftIO $ putStrLn "Shutting VM down"
-                       liftIO $ shutdownVM vm
+    Just ph -> do
+      let allHosts = [("this", thisHost (pcDirectory pc))] ++ [(hcName h, h) | h <- usedHosts pc] ++ chosts
+      manageConnections (map snd allHosts) $ do
+        let host = phWhere ph
+        liftIO $ putStrLn $ "Executing " ++ phase ++ " on " ++ hcHostname host
+        case hcVM host of
+          Nothing -> return ()
+          Just vm -> do
+                     liftIO $ putStrLn $ "Running VM"
+                     liftIO $ runVM object (hcParams host) vm
+        (exePath, exe) <- lift $ loadExecutor (phExecutor ph)
+        parser <- lift $ loadParser (phParser ph)
+        let phaseEnvironment = environment pc ph extVars
+        cmdP <- getCommandConnection host
+        liftIO $ chdirA cmdP (hcPath host)
+        forM_ (phFiles ph) $ \(srchostname, files) -> do
+          srchost <- lift $ getHost srchostname allHosts
+          forM_ files $ \path ->
+            transferFiles srchost path host path
+        createFiles host (phCreateFiles ph) phaseEnvironment
+        executeActions dbc cmdP pid host phase ph exePath exe parser object phaseEnvironment
+        case hcVM host of
+          Nothing -> return ()
+          Just vm -> when (phShutdownVM ph) $ do
+                         liftIO $ putStrLn "Shutting VM down"
+                         liftIO $ shutdownVM vm
 
 -- | Execute all actions for project's phase
 executeActions :: DBConfig
+               -> AnyCommandConnection
                -> ProjectId
                -> HostConfig
                -> String       -- ^ Phase name
@@ -84,7 +100,7 @@ executeActions :: DBConfig
                -> StringObject -- ^ Project config object
                -> Variables    -- ^ Phase environment
                -> MTHIS ()
-executeActions dbc pid host phase ph exePath exe parser object phaseEnvironment = do
+executeActions dbc cmdP pid host phase ph exePath exe parser object phaseEnvironment = do
   -- If actions list is defined for the phase, use it;
   -- Otherwise, use list of actions defined for the executor;
   -- If it isn't defined too, actions list == [phase name]
@@ -94,8 +110,6 @@ executeActions dbc pid host phase ph exePath exe parser object phaseEnvironment 
                         else exActions exe
                  else phActions ph
   -- Connect to remote host
-  cmdP <- getCommandConnection host
-  liftIO $ chdirA cmdP (hcPath host)
   forM_ actions $ \action -> do
     case lookupAction action exe of
       Nothing -> liftIO $ putStrLn $ "Action is not supported by executor: " ++ action

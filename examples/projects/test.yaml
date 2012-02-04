@@ -1,7 +1,7 @@
 title: Test project
 owner: portnov
 
-directory: /home/portnov/src/integration-server/
+directory: /home/portnov/src/progs/haskell/integration-server/
 
 host-by-environment:
   home: lenovo
@@ -46,9 +46,15 @@ hosts:
 phases:
   test:
     where: lenny32
+
+    files:
+      this:
+        - ghc-output.txt
+
     actions: ls
     executor: raw
     parser: all-ok
+    shutdown: no
 
   count:
     where: ${host-by-environment[environment]}

@@ -50,6 +50,7 @@ data ProjectConfig = ProjectConfig {
   deriving (Eq, Show)
 
 data HostConfig = HostConfig {
+     hcName :: String,
      hcHostname :: String,
      hcPath :: FilePath,
      hcVM :: Maybe VMConfig,

@@ -4,7 +4,8 @@ module THIS.Config.ProjectConfig
   (loadProjectConfig,
    loadHost,
    loadCommonHosts,
-   usedHosts
+   usedHosts,
+   thisHost
   ) where
 
 import Control.Applicative
@@ -58,6 +59,18 @@ loadProjectConfig name vars hosts = do
 usedHosts :: ProjectConfig -> [HostConfig]
 usedHosts pc = map (phWhere . snd) (pcPhases pc)
 
+thisHost :: FilePath -> HostConfig
+thisHost dir =
+    HostConfig {
+      hcName     = "this",
+      hcHostname = "localhost",
+      hcPath     = dir,
+      hcVM       = Nothing,
+      hcCommandsProtocol = "local",
+      hcSendProtocol     = "local",
+      hcReceiveProtocol  = "local",
+      hcParams   = [("host", "localhost")] }
+
 convertProject :: FilePath
                -> Variables
                -> [(String, HostConfig)]
@@ -65,18 +78,10 @@ convertProject :: FilePath
                -> Either ErrorMessage ProjectConfig
 convertProject path vars commonHosts object = do
   dir <- get "directory" object
-  let this = HostConfig {
-               hcHostname = "localhost",
-               hcPath     = dir,
-               hcVM       = Nothing,
-               hcCommandsProtocol = "local",
-               hcSendProtocol     = "local",
-               hcReceiveProtocol  = "local",
-               hcParams   = [("host", "localhost")] }
   title <- getOptional "title" (takeFileName path) object
   owner <- getOptional "owner" "admin" object
   hosts <- mapM convertHost =<< getOptional "hosts" [] object
-  let allHosts = [("this", this)] ++ commonHosts ++ hosts
+  let allHosts = [("this", thisHost dir)] ++ commonHosts ++ hosts
   phases <- mapM (convertPhase path object vars allHosts) =<< get "phases" object
   env <- getPairs object
   return $ ProjectConfig {
@@ -113,6 +118,7 @@ convertHost (name, object) = do
   recvP   <- getOptional "receive-protocol" cmdP    object
   params <- getPairs object
   return (name, HostConfig {
+             hcName = if null name then hostname else name,
              hcHostname = hostname,
              hcPath = path,
              hcVM = mbvm,

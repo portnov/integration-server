@@ -41,8 +41,8 @@ runVM object vars vm =
             if vmEmpty vm
               then restoreDomain conn (vmSnapshot vm) >> return ()
               else do
-                   waitVMStartup vm
                    createDomain dom
+                   waitVMStartup vm
                    return ()
           st -> fail $ "Don't know what to do with virtual domain " ++ vmName vm ++ " in state " ++ show st
       Nothing -> do
