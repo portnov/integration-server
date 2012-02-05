@@ -7,6 +7,7 @@ import Control.Monad
 import Data.Monoid
 import Data.Conduit
 import Data.Generics
+import Data.List
 import Network
 import Network.Socket hiding (connect)
 import System.IO
@@ -58,15 +59,16 @@ instance CommandProtocol LibSSH2 where
 
   runCommands (LibSSH2 session var) commands = do
       mbd <- atomically $ tryTakeTMVar var
-      let cmds = case mbd of
-                   Nothing -> commands
-                   Just dir -> map (inDir dir) commands
-      let bs = replicate (length commands - 1) False ++ [True]
-      res <- zipWithM (\cmd b -> execCommand b session cmd) cmds bs
-      let Just h = fst (last res)
-      return (CH h, mconcat (map snd res))
+      let cmd = intercalate " && " commands
+          cmd' = case mbd of
+                   Nothing -> cmd
+                   Just dir -> inDir dir cmd
+      putStrLn $ "EXEC: " ++ cmd'
+      res <- execCommand True session cmd'
+      let Just h = fst res
+      return (CH h, snd res)
     where
-      inDir dir cmd = printf "if cd %s; then %s; else exit 1; fi" dir cmd
+      inDir dir cmd = printf "if cd %s; then %s; else exit 10; fi" dir cmd
   
   getExitStatus (CH h) = getReturnCode h
 

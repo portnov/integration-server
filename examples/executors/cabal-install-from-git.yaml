@@ -1,0 +1,6 @@
+$$:
+  commands:
+    - cd ${base?~/src}/
+    - git clone ${url} 2>&1
+    - cd $$(basename ${url} .git)/${subdir}
+    - cabal install ${flags} 2>&1

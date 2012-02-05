@@ -80,10 +80,12 @@ parse ap = conduitState emptyState push close
     close _ = return []
 
     push st line = do
+      liftIO $ putStrLn $ "> " ++ line
       let ms = [(name, fst $ head (rgLines g), snd $ head (rgLines g)) | (name, g) <- pairs] 
       case matchR line ms of
         Just (group, params) -> do
-          let new = addParams params $ setCurrentGroup group (lookup group pairs) st
+          liftIO $ putStrLn $ "~ " ++ group
+          let new = step $ addParams params $ setCurrentGroup group (lookup group pairs) st
               res = getResult st
           return (StateProducing new [res])
 
@@ -100,6 +102,7 @@ parse ap = conduitState emptyState push close
                      case line =~ regex of
                        [] -> return $ StateProducing (addOtherLine line st) []
                        [list] -> do
+                                 liftIO $ putStrLn $ "~ " ++ regex
                                  let names = continueNames captures
                                      pairs = zip names (tail list)
                                  return $ StateProducing (addParams pairs st) []

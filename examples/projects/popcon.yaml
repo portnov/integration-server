@@ -1,0 +1,51 @@
+title: Popularity-contest server
+owner: portnov
+
+directory: /home/portnov/src/progs/haskell/yesod/popcon-server/
+
+hosts:
+  lenny32:
+    type: vm
+    host: debian32
+    login: portnov
+    path: /home/portnov/src/popcon-server/
+    known-hosts: /home/portnov/.ssh/known_hosts
+    public-key:  /home/portnov/.ssh/id_rsa.pub
+    private-key: /home/portnov/.ssh/id_rsa
+    empty: false
+    startup-time: 15
+    name: Debian32
+    template: template.xml
+
+phases:
+  prepare:
+    where: lenny32
+    actions: cabal update
+    executor: raw
+    parser: all-ok
+    shutdown: no
+
+  yesod-goodies:
+    where: lenny32
+    executor: cabal-install-from-git
+    url: git://github.com/pbrisbin/yesod-goodies.git
+    base: /home/portnov/src/
+    subdir: yesod-paginator
+    parser: cabal
+    shutdown: no
+
+  persistent-hssqlppp:
+    where: lenny32
+    executor: cabal-install-from-git
+    url: git://home.iportnov.ru/persistent-hssqlppp.git
+    base: /home/portnov/src/
+    parser: cabal
+    shutdown: no
+
+  build:
+    where: lenny32
+
+    actions: [""]
+    executor: cabal-dev-install
+    parser: cabal
+    shutdown: no
