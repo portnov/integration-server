@@ -10,10 +10,7 @@ module THIS.Database
 import Control.Monad
 import Control.Monad.Trans
 import Database.Persist
-import Database.Persist.Postgresql
 import qualified Data.Text as Text
-import Data.Text (Text)
-import Data.Char
 import Data.Time
 
 import THIS.Types

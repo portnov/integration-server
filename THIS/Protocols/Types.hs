@@ -1,20 +1,16 @@
 {-# LANGUAGE ExistentialQuantification, TypeFamilies, FlexibleInstances, MultiParamTypeClasses, DeriveDataTypeable #-}
 module THIS.Protocols.Types where
 
-import Control.Applicative
 import Control.Failure
 import Control.Monad.State
 import Control.Monad.Error
 import Data.Generics
-import Data.Object
-import Data.Object.Yaml
 import qualified Data.Map as M
 import Data.Conduit
 import System.Directory
 
 import THIS.Types
 import THIS.Util
-import THIS.Yaml
 
 data ConnectionInfo = ConnectionInfo {
   cHost :: String,

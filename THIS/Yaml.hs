@@ -6,7 +6,6 @@ import Control.Applicative
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.Error
-import Control.Monad.Instances
 import Control.Failure
 import Control.Exception as E
 import Data.Char

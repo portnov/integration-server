@@ -12,14 +12,10 @@ import Control.Applicative
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.State as St
-import Control.Monad.Error
 import Control.Failure
 import Data.Typeable
 import Data.Maybe
-import Data.Object
-import Data.Object.Yaml
 import qualified Data.Map as M
-import qualified Text.Parsec as P
 
 import THIS.Types
 import THIS.Util

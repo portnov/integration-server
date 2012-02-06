@@ -5,7 +5,6 @@ module THIS.Notify
 
 import Control.Monad
 import Control.Monad.Trans
-import Control.Failure
 import Data.Object
 import System.Process
 import System.IO

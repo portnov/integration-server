@@ -20,9 +20,7 @@ import System.IO
 import System.FilePath
 import System.Directory
 
-import THIS.Types
 import THIS.Util
-import THIS.Yaml
 import THIS.Protocols.Types
 
 data Local = Local

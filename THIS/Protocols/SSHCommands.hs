@@ -5,7 +5,6 @@ module THIS.Protocols.SSHCommands
   (SSHCommands (..)
   ) where
 
-import Control.Applicative
 import Control.Monad
 import Control.Monad.Trans
 import Control.Concurrent.STM
@@ -15,9 +14,7 @@ import Text.Printf
 import Data.Conduit
 import Data.Generics
 
-import THIS.Types
 import THIS.Util
-import THIS.Yaml
 import THIS.Protocols.Types
 
 data SSHCommands = SSHCommands ConnectionInfo

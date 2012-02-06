@@ -1,18 +1,28 @@
 -- | Hosts communications protocols
-module THIS.Protocols where
+module THIS.Protocols
+  (module THIS.Protocols.Types,
+   module THIS.Protocols.Parse,
+   module THIS.Protocols.Manager,
+   module THIS.Protocols.Local,
+   module THIS.Protocols.LibSSH2,
+   module THIS.Protocols.SSHCommands,
+   initializeProtocols,
+   deinitializeProtocols,
+   disconnectA,
+   runCommandsA, getExitStatusA,
+   chdirA, sendFileA, receiveFileA,
+   sendTreeA, receiveTreeA,
+   makeRemoteDirectoryA,
+   transferFiles
+  ) where
 
-import Control.Applicative
 import Control.Monad.Trans
-import Control.Failure
-import Data.Object
-import Data.Object.Yaml
 import Data.Maybe
 import Data.Conduit
 import System.Directory
 
 import THIS.Types
 import THIS.Util
-import THIS.Yaml
 import THIS.Protocols.Types
 import THIS.Protocols.Parse
 import THIS.Protocols.Manager

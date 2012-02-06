@@ -10,14 +10,12 @@ module THIS.Config.ProjectConfig
 
 import Control.Applicative
 import Control.Monad.Error
-import Control.Monad.Trans
 import Control.Failure
 import Data.Object
 import Data.Object.Yaml
 import System.Environment
 import System.FilePath
 import System.FilePath.Glob
-import System.Directory
 
 import THIS.Types
 import THIS.Util

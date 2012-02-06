@@ -7,13 +7,11 @@ module THIS.Templates.XML
 
 import Control.Monad.Trans
 import Control.Exception
-import Control.Failure
 import Data.Generics
 import Data.Object
 import Text.XML.HXT.Core
 
 import THIS.Types
-import THIS.Yaml
 import THIS.Templates
 import THIS.Templates.Text
 

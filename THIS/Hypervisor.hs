@@ -6,9 +6,6 @@ module THIS.Hypervisor
   ) where
 
 import Control.Monad
-import Control.Monad.Error
-import Control.Monad.Trans
-import Control.Failure
 import Control.Exception as E
 import Control.Concurrent
 import Data.Object

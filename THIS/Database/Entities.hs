@@ -7,7 +7,6 @@ import Database.Persist
 import Database.Persist.TH
 import Data.Text
 
-import THIS.Types
 import THIS.Database.Types
 
 derivePersistField "Role"

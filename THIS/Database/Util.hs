@@ -6,10 +6,7 @@ import Control.Monad
 import Control.Monad.Trans
 import Database.Persist
 import Database.Persist.Postgresql
-import qualified Data.ByteString as B
 import qualified Data.Text as Text
-import Data.Text (Text)
-import Data.Char
 
 import THIS.Types
 import THIS.Util

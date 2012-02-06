@@ -1,6 +1,5 @@
 
 import Control.Monad.Error
-import Data.Object
 import System.Environment
 
 import THIS.Types

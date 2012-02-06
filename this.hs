@@ -1,14 +1,10 @@
 
-import Control.Monad
 import Control.Monad.Error
-import Data.Maybe
 import System.Environment
 import System.Console.GetOpt
 
 import THIS.Types
-import THIS.Yaml
 import THIS.Config.Global
-import THIS.Config.Parser
 import THIS.Execute
 
 data Option =

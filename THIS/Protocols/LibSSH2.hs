@@ -5,25 +5,18 @@ module THIS.Protocols.LibSSH2
   (LibSSH2 (..)
   ) where
 
-import Control.Applicative
 import Control.Concurrent.STM
 import Control.Monad
-import Data.Monoid
-import Data.Conduit
 import Data.Generics
 import Data.List
-import Network
-import Network.Socket hiding (connect)
 import System.IO
-import Codec.Binary.UTF8.String
+-- import Codec.Binary.UTF8.String
 import Text.Printf
 
 import Network.SSH.Client.LibSSH2.Foreign
 import Network.SSH.Client.LibSSH2
 import Network.SSH.Client.LibSSH2.Conduit
 
-import THIS.Types
-import THIS.Yaml
 import THIS.Protocols.Types
 
 data LibSSH2 = LibSSH2 Session (TMVar FilePath)

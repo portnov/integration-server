@@ -15,8 +15,6 @@ import Data.Conduit
 
 import THIS.Types
 import THIS.Util
-import THIS.Yaml
-import THIS.Config.Parser
 import THIS.Database
 
 data ParserState = ParserState {

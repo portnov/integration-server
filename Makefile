@@ -1,3 +1,4 @@
+GHCFLAGS=-fwarn-unused-imports
 GHC=ghc $(GHCFLAGS) --make
 
 all: this this-install-db notify-test

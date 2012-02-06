@@ -5,23 +5,18 @@ module THIS.Execute
 
 import Control.Monad
 import Control.Monad.Error
-import Control.Monad.Trans
 import Control.Failure
 import Data.Object
 import System.FilePath
-import System.FilePath.Glob
 import System.Directory
 import Data.Conduit
 
 import THIS.Types
 import THIS.Util
-import THIS.Yaml
 import THIS.Config.ProjectConfig
 import THIS.Config.Executor
 import THIS.Config.Parser
 import THIS.Protocols
-import THIS.Protocols.Types
-import THIS.Protocols.Manager
 import THIS.Templates.Text
 import THIS.Hypervisor
 import THIS.Parse

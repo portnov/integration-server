@@ -6,7 +6,6 @@ module THIS.Config.Global
 
 import Control.Applicative
 import Control.Monad.Error
-import Control.Monad.Trans
 import Control.Failure
 import Data.Object
 import Data.Object.Yaml

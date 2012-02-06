@@ -1,11 +1,7 @@
 module THIS.Protocols.Parse where
 
 import Control.Applicative
-import Data.Object
-import Data.Object.Yaml
 
-import THIS.Types
-import THIS.Yaml
 import THIS.Protocols.Types
 import THIS.Protocols.Local
 import THIS.Protocols.LibSSH2

@@ -7,17 +7,12 @@ module THIS.Config.Executor
 
 import Control.Applicative
 import Control.Monad.Error
-import Control.Monad.Trans
-import Control.Failure
 import Data.Maybe
 import Data.Object
-import Data.Object.Yaml
-import Text.Printf
 
 import THIS.Types
 import THIS.Util
 import THIS.Yaml
-import THIS.Templates.Text
 
 -- | Load executor by name.
 -- Returns path to loaded executor and executor itself.

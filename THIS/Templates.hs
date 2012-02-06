@@ -3,15 +3,12 @@ module THIS.Templates where
 
 import Control.Monad
 import Control.Monad.Error
-import Control.Monad.Trans
 import Control.Failure
 import System.FilePath
 import System.Directory
 import System.Environment
 
 import THIS.Types
-import THIS.Util
-import THIS.Yaml
 
 -- | Read template by name.
 -- Returns (template file path, template).

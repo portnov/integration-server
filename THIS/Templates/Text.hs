@@ -16,11 +16,9 @@ module THIS.Templates.Text
 
 import Control.Monad
 import Control.Monad.Error
-import Control.Monad.Trans
 import Control.Failure hiding (try)
 import Data.Maybe
 import Data.Object
-import Data.Object.Yaml
 import Text.Parsec
 import Text.Parsec.String as P
 
