@@ -7,7 +7,8 @@
 --  * ${dictionary[key]?default-value}
 --
 module THIS.Templates.Text
-  ( Item (..),
+  ( Template,
+    Item (..),
     parseTemplate,
     renderTemplate,
     evalTemplate,
@@ -27,48 +28,81 @@ import THIS.Util
 import THIS.Yaml
 import THIS.Templates
 
+import Debug.Trace
+
+type Template = [Item]
+
 -- | Template item
 data Item =
     Literal String              -- ^ string literal
   | Variable String String      -- ^ variable subsitiution: variable name, default value
-  | Lookup String String String -- ^ dictionary lookup: dictionary name, key, default value
+  | Lookup String Item String -- ^ dictionary lookup: dictionary name, key, default value
+  | Item :/: Item
   deriving (Eq, Show)
 
 identifier :: P.Parser String
-identifier = (many1 $ noneOf "[]{}$:? \t\n\r") <?> "identifier"
+identifier = (many1 $ noneOf "[]{}$:?/ \t\n\r") <?> "identifier"
 
 defaultValue :: P.Parser String
-defaultValue = (many1 $ noneOf "}") <?> "variable default value"
+defaultValue = (many $ noneOf "/}]") <?> "variable default value"
+
+pKey :: P.Parser Item
+pKey = do
+  name <- identifier
+  c <- oneOf "]?"
+  case c of
+    ']' -> return (Variable name "")
+    '?' -> do
+           def <- defaultValue
+           char ']'
+           return (Variable name def)
+    _   -> fail $ "Unexpected: " ++ [c]
+
+nested = do
+  list <- pItem True `sepBy1` char '/'
+  return $ foldr1 (\x y -> x :/: y) list
+
+nest :: Item -> P.Parser Item
+nest item = do
+  next <- (try nested <|> pItem True) <?> "nested template"
+  char '}'
+  return $ item :/: next
 
 pVariable :: P.Parser Item
 pVariable = do
-  char '$'
-  char '{'
+  trace "variable" ( string "${" <?> "variable start" )
   name <- identifier
-  c <- oneOf "}[?"
+  c <- oneOf "}[?/"
   case c of
     '?' -> do
            def <- defaultValue
            char '}'
            return (Variable name def)
-    '}' -> return (Variable name "")
+    '}' -> return (Variable name [])
     '[' -> do
-           key <- identifier
-           char ']'
-           e <- oneOf "}?"
+           key <- pKey
+           e <- oneOf "}?/"
            case e of
-             '}' -> return (Lookup name key "")
+             '}' -> return (Lookup name key [])
              '?' -> do
                     def <- defaultValue
                     char '}'
                     return (Lookup name key def)
+             '/' -> nest   (Lookup name key [])
              _ -> fail $ "Unexpected: " ++ [e]
     _ -> fail $ "Unexpected: " ++ [c]
 
-pPlain :: P.Parser Item
-pPlain = do
-  text <- (many1 $ noneOf "$") <?> "any text without dollar signs"
+pPlain :: Bool -> P.Parser Item
+pPlain b = do
+  let exc = if b then "$]}/" else "$"
+  text <- (many1 $ noneOf exc) <?> "any text without dollar signs"
   return (Literal text)
+
+pLiftedPlain :: P.Parser Item
+pLiftedPlain = do
+  let exc = "$]}/"
+  text <- (many1 $ noneOf exc) <?> "any text without dollar signs"
+  return (Variable text [])
 
 pTwoDollars :: P.Parser Item
 pTwoDollars = do
@@ -77,42 +111,58 @@ pTwoDollars = do
 
 pDollarChar :: P.Parser Item
 pDollarChar = do
-  char '$'
+  char '$' <?> "one dollar sign"
   x <- anyChar
   return (Literal ['$', x])
 
 pDollarEnd :: P.Parser Item
 pDollarEnd = do
-  char '$'
+  char '$' <?> "one dollar sign at end of input"
   eof
   return (Literal "$")
 
-pTemplate :: P.Parser [Item]
-pTemplate = many $ try pVariable <|> try pPlain <|> try pTwoDollars <|> try pDollarChar <|> pDollarEnd
+pItem :: Bool -> P.Parser Item
+pItem b = try pVariable <|> try (pPlain b) <|> try pTwoDollars <|> try pDollarChar <|> pDollarEnd
+
+pKeyItem :: P.Parser Item
+pKeyItem = try pVariable <|> try pLiftedPlain <|> try pTwoDollars <|> try pDollarChar <|> pDollarEnd
+
+pTemplate :: Bool -> P.Parser Template
+pTemplate b = many (pItem b)
 
 -- | Parse template
 parseTemplate :: FilePath  -- ^ Template file path (used in error messages)
               -> String    -- ^ Template text
-              -> Either ParseError [Item]
+              -> Either ParseError Template
 parseTemplate path str =
   if '$' `elem` str
-    then case parse pTemplate path str of
+    then case parse (pTemplate False) path str of
            Left err -> failure err
            Right tpl -> return tpl
     else return [Literal str]
 
 -- | Render template
-renderTemplate :: StringObject -> Variables -> [Item] -> String
-renderTemplate object pairs list = concatMap go list
+renderTemplate :: StringObject -> Variables -> Template -> String
+renderTemplate object pairs list = render list
   where
+    render = concatMap go
+
     go (Literal str) = str
     go (Variable var def) = fromMaybe def $ lookup var pairs
     go (Lookup dict key def) =
-        case lookupYaml object pairs dict key def of
-          Left _ -> def
-          Right val -> val
+        let keyR  = go key
+        in case lookupYaml object pairs dict keyR def of
+             Left _ -> def
+             Right val -> val
+    go (parent :/: child) =
+        let parentR = go parent
+        
 
-    lookupYaml :: StringObject -> [(String, String)] -> String -> String -> String -> Either ErrorMessage String
+    getY :: Item -> Either ErrorMessage StringObject
+    getY (Literal str) = get str object
+    getY (Variable var def)
+
+    lookupYaml :: StringObject -> Variables -> String -> String -> String -> Either ErrorMessage String
     lookupYaml object vars dictname keyname def = do
       dict <- get dictname object :: Either ErrorMessage StringObject
       let key = fromMaybe "$$" $ lookup keyname vars
@@ -124,9 +174,9 @@ evalTemplate :: FilePath     -- ^ Template file path (used in error messages)
              -> Variables
              -> String       -- ^ Template itself
              -> Either ParseError String
-evalTemplate path object pairs template = do
+evalTemplate path object vars template = do
   list <- parseTemplate path template
-  return $ renderTemplate object pairs list
+  return $ renderTemplate object vars list
 
 -- | Evaluate template from text file.
 -- Returns path to temporary file with rendered text.

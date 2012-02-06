@@ -3,6 +3,6 @@ database:
   database: this
   user: portnov
 
-mail-from: this@iportnov
-sendmail: "cat > /dev/tty"
+mail-from: portnov@iportnov.ru
+sendmail: /usr/sbin/sendmail -t ${to} -f ${from}
 

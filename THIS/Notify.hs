@@ -46,6 +46,8 @@ notify gc address subjtpl bodytpl object vars = do
   body <- liftEitherWith ParsecError $
                  evalTemplate "<body template>" object vars' bodytpl
   let mail = composeMail (gcMailFrom gc) address subject body
+  liftIO $ putStrLn $ "> " ++ sendmail
+  liftIO $ putStrLn $ mail
   (stdin, stdout, stderr, pid) <- liftIO $ runInteractiveCommand sendmail
   liftIO $ do
     hPutStrLn stdin mail

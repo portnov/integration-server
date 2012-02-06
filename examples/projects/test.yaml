@@ -8,10 +8,13 @@ dir:
   work: /home/portnov/src/integration-server/
   $$: /usr/src/integration-server/
 
-host-by-environment:
-  home: lenovo
-  work: this
-  virtual: lenny32
+config:
+  home:
+    host: lenovo
+  work:
+    host: this
+  virtual:
+    host: lenny32
 
 nginx-conf-path:
   production: /etc/nginx/sites-enabled/
@@ -62,13 +65,13 @@ phases:
     shutdown: no
 
   count:
-    where: ${host-by-environment[environment]}
+    where: ${config[environment?home]/host}
     actions: /home/portnov/bin/count ${count?7}
     executor: raw
     parser: all-ok
 
   build:
-    where: ${host-by-environment[environment]}
+    where: ${config[environment?home]/host}
     actions: [all, clean]
 
     domain: example.com
