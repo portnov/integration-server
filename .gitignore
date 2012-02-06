@@ -4,5 +4,6 @@
 parser-test
 this
 this-install-db
+notify-test
 test
 dist/

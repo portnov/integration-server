@@ -10,7 +10,8 @@ type Variables = [(String, String)]
 
 data GlobalConfig = GlobalConfig {
     gcDatabase :: DBConfig,
-    gcSendmail :: String }
+    gcSendmail :: String,
+    gcMailFrom :: String }
   deriving (Eq, Show)
 
 data DBConfig = DBConfig {

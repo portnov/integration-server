@@ -2,3 +2,7 @@
 database:
   database: this
   user: portnov
+
+mail-from: this@iportnov
+sendmail: "cat > /dev/tty"
+

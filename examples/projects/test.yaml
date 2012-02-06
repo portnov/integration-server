@@ -1,7 +1,12 @@
 title: Test project
 owner: portnov
 
-directory: /home/portnov/src/progs/haskell/integration-server/
+directory: "${dir[environment]}"
+
+dir:
+  home: /home/portnov/src/progs/haskell/integration-server/
+  work: /home/portnov/src/integration-server/
+  $$: /usr/src/integration-server/
 
 host-by-environment:
   home: lenovo

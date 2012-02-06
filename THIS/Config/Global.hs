@@ -42,6 +42,7 @@ convertConfig object =
   GlobalConfig
     <$> (convertDBC =<< get "database" object)
     <*> getOptional "sendmail" "sendmail -t" object
+    <*> getOptional "mail-from" "this@localhost" object
 
 convertDBC :: StringObject -> Either ErrorMessage DBConfig
 convertDBC object = 
