@@ -88,6 +88,9 @@ Library
 Executable  this
   Main-is:  this.hs
 
+Executable  this-install-db
+  Main-is:  this-install-db.hs
+
 Source-Repository head
   Type: git
   Location: git://home.iportnov.ru/integration-server.git
