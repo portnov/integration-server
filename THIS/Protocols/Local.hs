@@ -1,5 +1,10 @@
 {-# LANGUAGE TypeFamilies, DeriveDataTypeable #-}
-module THIS.Protocols.Local where
+-- | Local protocol: executes commands and copies files
+-- on localhost. Used by default for `this' host.
+module THIS.Protocols.Local
+  (Local (..),
+   copyDir
+  ) where
 
 import Control.Applicative
 import Control.Monad

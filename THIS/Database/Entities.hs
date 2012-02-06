@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell, QuasiQuotes, EmptyDataDecls, TypeFamilies, FlexibleContexts, GADTs, OverloadedStrings #-}
+-- | Databasse entities
 module THIS.Database.Entities where
 
 import Data.Time

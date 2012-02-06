@@ -1,5 +1,7 @@
-
-module THIS.Notify where
+--  | Send notifications by e-mail.
+module THIS.Notify
+  (sendNotifications
+  ) where
 
 import Control.Monad
 import Control.Monad.Trans
@@ -16,14 +18,26 @@ import THIS.Util
 import THIS.Templates.Text
 import THIS.Database
 
-composeMail :: String -> String -> String -> String -> String
+-- | Compose text to pass to sendmail command.
+composeMail :: String  -- ^ From:
+            -> String  -- ^ To:
+            -> String  -- ^ Subject:
+            -> String  -- ^ Message body
+            -> String
 composeMail from to subj body =
   printf "From: %s\n\
 \To: %s\n\
 \Subject: %s\n\n\
 \%s\n" from to subj body
 
-notify :: GlobalConfig -> String -> String -> String -> StringObject -> Variables -> THIS ()
+-- | Send one notification.
+notify :: GlobalConfig
+       -> String       -- ^ E-mail to send notification to
+       -> String       -- ^ Message subject template
+       -> String       -- ^ Message body template
+       -> StringObject
+       -> Variables
+       -> THIS ()
 notify gc address subjtpl bodytpl object vars = do
   let vars' = [("to", address), ("from", gcMailFrom gc)] ++ vars
   sendmail <- liftEitherWith ParsecError $
@@ -40,7 +54,15 @@ notify gc address subjtpl bodytpl object vars = do
     waitForProcess pid
   return ()
 
-sendNotifications :: GlobalConfig -> ProjectId -> ProjectConfig -> StringObject -> Variables -> String -> String -> THIS ()
+-- | Send notifications to all interested people
+sendNotifications :: GlobalConfig
+                  -> ProjectId
+                  -> ProjectConfig
+                  -> StringObject
+                  -> Variables
+                  -> String        -- ^ Phase name
+                  -> String        -- ^ Phase result
+                  -> THIS ()
 sendNotifications gc pid pc object vars phase result = do
   ts <- runDB (gcDatabase gc) $ do
       rs <- selectList [NotifySetProject <-. [Just pid, Nothing],

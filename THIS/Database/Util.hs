@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell, QuasiQuotes, EmptyDataDecls, TypeFamilies, FlexibleContexts, GADTs, OverloadedStrings #-}
+-- | Database utility functions
 module THIS.Database.Util where
 
 import Control.Monad
@@ -15,9 +16,9 @@ import THIS.Util
 import THIS.Database.Types
 import THIS.Database.Entities
 
+-- | Run database actions
 runDB :: (MonadIO m) => DBConfig -> DB a -> m a
 runDB dbc db = do
-  liftIO $ print dbc
   liftIO $ withPostgresqlConn (toBS $ show dbc) $ runSqlConn $ db
 
 check :: (Show v, PersistEntity v) => v -> DB (Key SqlPersist v)

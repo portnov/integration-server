@@ -39,7 +39,8 @@ actionCommands action exe =
 
 -- | Compose environment for given project and phase
 environment :: ProjectConfig -> Phase -> Variables -> Variables
-environment pc ph ext = phEnvironment ph ++ hcParams (phWhere ph) ++ pcEnvironment pc ++ ext
+environment pc ph ext =
+  phEnvironment ph ++ hcParams (phWhere ph) ++ pcEnvironment pc ++ ext
 
 getHost :: String -> [(String, HostConfig)] -> THIS HostConfig
 getHost name pairs =
@@ -54,8 +55,8 @@ execute :: GlobalConfig
         -> Variables        -- ^ External environment
         -> THIS ()
 execute gc projectName phase extVars = do
-  chosts <- loadCommonHosts
-  (ppath, object, pc) <- loadProjectConfig projectName extVars chosts
+  commonHosts <- loadCommonHosts
+  (ppath, object, pc) <- loadProjectConfig projectName extVars commonHosts
   let baseEnvironment = [("project", pcTitle pc),
                          ("path",    ppath),
                          ("phase",   phase)]
@@ -68,7 +69,9 @@ execute gc projectName phase extVars = do
   case lookup phase (pcPhases pc) of
     Nothing -> lift $ putStrLn $ "No such phase: " ++ phase
     Just ph -> do
-      let allHosts = [("this", thisHost baseDir)] ++ [(hcName h, h) | h <- usedHosts pc] ++ chosts
+      let allHosts = [("this", thisHost baseDir)]
+                     ++ [(hcName h, h) | h <- usedHosts pc]
+                     ++ commonHosts
       manageConnections (map snd allHosts) $ do
         let host = phWhere ph
         liftIO $ putStrLn $ "Executing " ++ phase ++ " on " ++ hcHostname host
@@ -101,14 +104,16 @@ execute gc projectName phase extVars = do
                          liftIO $ putStrLn "Shutting VM down"
                          liftIO $ shutdownVM vm
 
--- | Execute all actions for project's phase
+-- | Execute all actions for project's phase.
+-- Calls executors and parsers.
+-- Returns result of last action.
 executeActions :: DBConfig
                -> AnyCommandConnection
                -> ProjectId
                -> HostConfig
                -> String       -- ^ Phase name
                -> Phase
-               -> FilePath
+               -> FilePath     -- ^ Path to executor description
                -> Executor
                -> Parser
                -> StringObject -- ^ Project config object

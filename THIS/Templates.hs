@@ -13,6 +13,8 @@ import THIS.Types
 import THIS.Util
 import THIS.Yaml
 
+-- | Read template by name.
+-- Returns (template file path, template).
 readTemplate :: String -> THIS (FilePath, String)
 readTemplate name = do
   home <- liftIO $ getEnv "HOME"

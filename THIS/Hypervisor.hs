@@ -1,5 +1,9 @@
 {-# LANGUAGE ScopedTypeVariables, DeriveDataTypeable #-}
-module THIS.Hypervisor where
+-- | Virtual machines control
+module THIS.Hypervisor
+  (runVM,
+   shutdownVM
+  ) where
 
 import Control.Monad
 import Control.Monad.Error
@@ -15,6 +19,7 @@ import THIS.Types
 import THIS.Yaml
 import THIS.Templates.XML
 
+-- | Run VM if needed
 runVM :: StringObject -> Variables -> VMConfig -> IO ()
 runVM object vars vm =
   withConnection (vmHypervisor vm)  $ \conn -> do
@@ -50,6 +55,7 @@ runVM object vars vm =
         createDomainXML conn xml []
         return ()
 
+-- | Wait for VM to start up
 waitVMStartup :: VMConfig -> IO ()
 waitVMStartup vm = do
   now <- getCurrentTime
@@ -58,6 +64,7 @@ waitVMStartup vm = do
   now' <- getCurrentTime
   putStrLn $ show now ++ " - " ++ show now'
 
+-- | Shutdown VM
 shutdownVM :: VMConfig -> IO ()
 shutdownVM vm =
   withConnection (vmHypervisor vm) $ \conn -> do
@@ -73,3 +80,4 @@ shutdownVM vm =
       Just dom -> do
         shutdownDomain dom
         return ()
+

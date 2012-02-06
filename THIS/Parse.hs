@@ -1,4 +1,4 @@
-
+-- | Actions output parsing
 module THIS.Parse
   (getParserSink,
    parse,
@@ -58,10 +58,16 @@ addOtherLine line st = st { psOtherLines = psOtherLines st ++ [line] }
 step :: ParserState -> ParserState
 step st = st { psLineNr = psLineNr st + 1 }
 
+-- | Turn list of regexp captures names into infinite list.
+-- E.g., [\"a\", \"b\", "\c"\] --> [\"a\", \"b\", \"c\", \"4\", \"5\" ...
 continueNames :: [String] -> [String]
 continueNames list = list ++ drop (length list) (map show [1..])
 
-matchR :: String -> [(String, String, [String])] -> Maybe (String, [(String, String)])
+-- | Match output line with starting regexps of defined groups.
+-- Returns (group name, group params).
+matchR :: String                       -- ^ Line to check
+       -> [(String, String, [String])] -- ^ [(group name, starting regexp, regexp captures names)]
+       -> Maybe (String, Variables)
 matchR _ [] = Nothing
 matchR line ((name, regex, captures):other) =
   let allMatches = line =~ regex :: [[String]]
@@ -72,6 +78,7 @@ matchR line ((name, regex, captures):other) =
                  in  Just (name, pairs)
        _ -> error $ "Unexpected regex result: " ++ show allMatches
 
+-- | Parser itself
 parse :: ActionParser -> Conduit String IO ParserResult
 parse ap = conduitState emptyState push close
   where
@@ -107,14 +114,19 @@ parse ap = conduitState emptyState push close
                                      pairs = zip names (tail list)
                                  return $ StateProducing (addParams pairs st) []
 
-getParserSink :: DBConfig -> ActionRecordId -> Parser -> String -> Either ErrorMessage (ActionParser, Sink ParserResult IO String)
+-- | Parsing Sink. Puts results to DB.
+getParserSink :: DBConfig
+              -> ActionRecordId
+              -> Parser
+              -> String         -- ^ Action name
+              -> Either ErrorMessage (ActionParser, Sink ParserResult IO String)
 getParserSink dbc arid (Parser parser) action =
   case lookup action parser `mplus` lookup "$$" parser of
     Nothing -> failure $ "Action is not supported by parser: " ++ action
     Just ap -> return (ap, sinkState "ok" (push ap) close)
   where
     push ap st pr = do
-      let cur = lookupGroup 0 (apResultsMap ap) (groupName pr)
+      let cur = lookupGroup (apResultsMap ap) (groupName pr)
           new = maximumBy (cmpOrder ap) [st, cur]
       liftIO $ putStrLn $ "result: " ++ new
       liftIO $ runDB dbc $ logOutput arid pr
@@ -122,6 +134,7 @@ getParserSink dbc arid (Parser parser) action =
 
     close st = return st
 
+-- | Compare results with respect to defined order
 cmpOrder :: ActionParser -> String -> String -> Ordering
 cmpOrder ap x y = fromMaybe (compare x y) $ do
                  i <- findIndex (== x) (full ap)
@@ -130,6 +143,8 @@ cmpOrder ap x y = fromMaybe (compare x y) $ do
   where 
     full ap = completeResultsList (map fst $ apResultsMap ap)
 
+-- | Complete list of possible results.
+-- Add `ok', `warning' and `error' to list.
 completeResultsList :: [String] -> [String]
 completeResultsList list =
   ["ok" | "ok" `notElem` list]
@@ -137,20 +152,27 @@ completeResultsList list =
   ++ ["warning" | "warning" `notElem` list]
   ++ ["error" | "error" `notElem` list]
 
-lookupGroup :: Int -> [(String, ResultsRange)] -> String -> String
-lookupGroup 0 [] _ = "ok"
-lookupGroup _ [] _ = "error"
-lookupGroup c ((result, range):other) group
+-- | Look up for result by output group name
+lookupGroup :: [(String, ResultsRange)] -- ^ [(group name, matched results range)]
+            -> String                   -- ^ Action result
+            -> String
+lookupGroup [] _ = "ok"
+lookupGroup ((result, range):other) group
     | group `matches` range = result
-    | otherwise             = lookupGroup c other group
+    | otherwise             = lookupGroup other group
 
+-- | Check if result matches results range
 matches :: String -> ResultsRange -> Bool
 matches group (ResultsList list) = any good list
   where good (GroupName name) = (name == group)
         good _                = False
 matches group _ = False
 
-updateResult :: ActionParser -> Int -> String -> String
+-- | Update result using exit code
+updateResult :: ActionParser
+             -> Int          -- ^ Exit code
+             -> String       -- ^ Previous result
+             -> String
 updateResult ap rc rr = 
   let groups = apGroups ap
       pairs  = apResultsMap ap

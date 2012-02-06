@@ -1,5 +1,9 @@
 {-# LANGUAGE TypeFamilies, DeriveDataTypeable #-}
-module THIS.Protocols.LibSSH2 where
+-- | libssh2 protocol. Uses libssh2 to send commands
+-- via SSH and files via SCP.
+module THIS.Protocols.LibSSH2
+  (LibSSH2 (..)
+  ) where
 
 import Control.Applicative
 import Control.Concurrent.STM

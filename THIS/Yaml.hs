@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, FlexibleContexts #-}
+-- | YAML loading utilities
 module THIS.Yaml where
 
 import Control.Applicative

@@ -1,3 +1,4 @@
+-- | Hosts communications protocols
 module THIS.Protocols where
 
 import Control.Applicative
@@ -19,53 +20,84 @@ import THIS.Protocols.Local
 import THIS.Protocols.LibSSH2
 import THIS.Protocols.SSHCommands
 
+-- | Initialize all protocols
 initializeProtocols :: IO ()
 initializeProtocols = do
   initializeProtocol Local
   initializeProtocol (LibSSH2 undefined undefined)
   initializeProtocol (SSHCommands undefined)
 
+-- | Deinitialize all protocols
 deinitializeProtocols :: IO ()
 deinitializeProtocols = do
   deinitializeProtocol Local
   deinitializeProtocol (LibSSH2 undefined undefined)
   deinitializeProtocol (SSHCommands undefined)
 
+-- | Disconnect any connection
 disconnectA :: AnyConnection -> IO ()
 disconnectA (AnyConnection p) = disconnect p
 
-runCommandsA :: AnyCommandConnection -> [String] -> IO (AnyRCHandle, Source IO String)
+-- | Run commands on remote host.
+-- Returns (retun code handle, Source).
+runCommandsA :: AnyCommandConnection
+             -> [String]                          -- ^ Commands
+             -> IO (AnyRCHandle, Source IO String)
 runCommandsA (AnyCommandConnection p) commands = do
   (h, r) <- runCommands p commands
   return (AnyRCHandle h, r)
 
+-- | Get command exit status
 getExitStatusA :: AnyRCHandle -> IO Int
 getExitStatusA (AnyRCHandle h) = getExitStatus h
 
+-- | Change working directory on remote host
 chdirA :: AnyCommandConnection -> FilePath -> IO ()
 chdirA (AnyCommandConnection p) dir = changeWorkingDirectory p dir
 
-sendFileA :: AnyFilesConnection -> FilePath -> FilePath -> IO ()
+-- | Send file from local to remote host
+sendFileA :: AnyFilesConnection
+          -> FilePath -- ^ Local file path
+          -> FilePath -- ^ Remote file path
+          -> IO ()
 sendFileA (AnyFilesConnection p) local remote =
   sendFile p local remote
 
+-- | Make directory on remote host
 makeRemoteDirectoryA :: AnyFilesConnection -> FilePath -> IO ()
 makeRemoteDirectoryA (AnyFilesConnection p) path =
   makeRemoteDirectory p path
 
-sendTreeA :: AnyFilesConnection -> FilePath -> FilePath -> IO ()
+-- | Send files tree to remote host
+sendTreeA :: AnyFilesConnection
+          -> FilePath -- ^ Local directory path
+          -> FilePath -- ^ Remote directory path
+          -> IO ()
 sendTreeA (AnyFilesConnection p) local remote =
   sendTree p local remote
 
-receiveFileA :: AnyFilesConnection -> FilePath -> FilePath -> IO ()
+-- | Receive file from remote host
+receiveFileA :: AnyFilesConnection
+             -> FilePath -- ^ Remote file path
+             -> FilePath -- ^ Local file path
+             -> IO ()
 receiveFileA (AnyFilesConnection p) remote local =
   receiveFile p remote local
 
-receiveTreeA :: AnyFilesConnection -> FilePath -> FilePath -> IO ()
+-- | Receive files tree from remote host
+receiveTreeA :: AnyFilesConnection
+             -> FilePath -- ^ Remote directory path
+             -> FilePath -- ^ Local directory path
+             -> IO ()
 receiveTreeA (AnyFilesConnection p) remote local =
   receiveTree p remote local
 
-transferFiles :: HostConfig -> FilePath -> HostConfig -> FilePath -> MTHIS ()
+-- | Transfer files from one remote host to another
+transferFiles :: HostConfig -- ^ Source host
+              -> FilePath   -- ^ Source path
+              -> HostConfig -- ^ Destination host
+              -> FilePath   -- ^ Destination path
+              -> MTHIS ()
 transferFiles srchost src dsthost dst = do
   let isDir = last src == '/'
   mbtc <- getTransferConnections srchost dsthost

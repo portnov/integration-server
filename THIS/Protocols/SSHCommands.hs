@@ -1,5 +1,9 @@
 {-# LANGUAGE TypeFamilies, DeriveDataTypeable #-}
-module THIS.Protocols.SSHCommands where
+-- | SSH commands protocol. Uses ssh, scp commands
+-- to send commands and files.
+module THIS.Protocols.SSHCommands
+  (SSHCommands (..)
+  ) where
 
 import Control.Applicative
 import Control.Monad

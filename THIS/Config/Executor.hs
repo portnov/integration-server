@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances #-}
+-- | Executors loader
 module THIS.Config.Executor
   (loadExecutor,
    lookupAction

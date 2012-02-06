@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable, StandaloneDeriving #-}
+-- | XML templates. Syntax is the same as in THIS.Templates.Text.
 module THIS.Templates.XML
   (XMLTemplateError (..),
    evalXMLFile
@@ -16,12 +17,18 @@ import THIS.Yaml
 import THIS.Templates
 import THIS.Templates.Text
 
+-- | Exception trhown on invalid template syntax
 data XMLTemplateError = XMLTemplateError String
   deriving (Eq, Show, Data, Typeable)
 
 instance Exception XMLTemplateError
 
-evalXMLFile :: StringObject -> [(String, String)] -> FilePath -> THIS String
+-- | Evaluate XML template taken from file.
+-- Returns rendered XML string.
+evalXMLFile :: StringObject
+            -> Variables
+            -> FilePath    -- ^ Template file path
+            -> THIS String
 evalXMLFile object vars name = do
   (path, tpl) <- readTemplate name
   s <- liftIO $ processXML path tpl object vars

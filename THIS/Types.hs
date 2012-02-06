@@ -1,4 +1,5 @@
 {-# LANGUAGE MultiParamTypeClasses, FlexibleInstances, RecordWildCards, DeriveDataTypeable, FlexibleContexts, TypeSynonymInstances #-}
+-- | Generic types
 module THIS.Types where
 
 import Control.Monad.Error as E
@@ -8,12 +9,14 @@ import qualified Text.Parsec as P
 
 type Variables = [(String, String)]
 
+-- | Global configuration
 data GlobalConfig = GlobalConfig {
     gcDatabase :: DBConfig,
     gcSendmail :: String,
     gcMailFrom :: String }
   deriving (Eq, Show)
 
+-- | Database configuration
 data DBConfig = DBConfig {
     dbcHost :: String,
     dbcPort :: Int,
@@ -100,6 +103,7 @@ data ActionParser = ActionParser {
     apGroups :: [(String, ResultGroup)] }
   deriving (Eq, Show)
 
+-- | Range of action results
 data ResultsRange =
     ResultsList [ResultVariant]
   | CodesRange Int Int

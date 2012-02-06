@@ -23,7 +23,7 @@ loadGlobalConfig :: THIS GlobalConfig
 loadGlobalConfig = do
   home <- liftIO $ getEnv "HOME"
   let homePath = home </> ".config" </> "this" </> "config.yaml"
-      etcPath  = "/etc" </> "thin" </> "config.yaml"
+      etcPath  = "/etc" </> "this" </> "config.yaml"
   he <- liftIO $ doesFileExist homePath
   path <- if he
             then return homePath
@@ -49,7 +49,7 @@ convertDBC object =
   DBConfig
     <$> getOptional "host" "" object
     <*> getOptional "port" 5432 object
-    <*> getOptional "database" "thin" object
-    <*> getOptional "user" "thin" object
+    <*> getOptional "database" "this" object
+    <*> getOptional "user" "this" object
     <*> getOptional "password" "" object
 

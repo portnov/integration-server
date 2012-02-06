@@ -1,4 +1,11 @@
 {-# LANGUAGE ScopedTypeVariables #-}
+-- | Text templates. Supported substitutions are:
+--
+--  * ${variable}
+--  * ${variable?default-value}
+--  * ${dictionary[key]}
+--  * ${dictionary[key]?default-value}
+--
 module THIS.Templates.Text
   ( Item (..),
     parseTemplate,
@@ -22,10 +29,11 @@ import THIS.Util
 import THIS.Yaml
 import THIS.Templates
 
+-- | Template item
 data Item =
-    Literal String
-  | Variable String String
-  | Lookup String String String
+    Literal String              -- ^ string literal
+  | Variable String String      -- ^ variable subsitiution: variable name, default value
+  | Lookup String String String -- ^ dictionary lookup: dictionary name, key, default value
   deriving (Eq, Show)
 
 identifier :: P.Parser String
@@ -84,7 +92,10 @@ pDollarEnd = do
 pTemplate :: P.Parser [Item]
 pTemplate = many $ try pVariable <|> try pPlain <|> try pTwoDollars <|> try pDollarChar <|> pDollarEnd
 
-parseTemplate :: FilePath -> String -> Either ParseError [Item]
+-- | Parse template
+parseTemplate :: FilePath  -- ^ Template file path (used in error messages)
+              -> String    -- ^ Template text
+              -> Either ParseError [Item]
 parseTemplate path str =
   if '$' `elem` str
     then case parse pTemplate path str of
@@ -92,7 +103,8 @@ parseTemplate path str =
            Right tpl -> return tpl
     else return [Literal str]
 
-renderTemplate :: StringObject -> [(String, String)] -> [Item] -> String
+-- | Render template
+renderTemplate :: StringObject -> Variables -> [Item] -> String
 renderTemplate object pairs list = concatMap go list
   where
     go (Literal str) = str
@@ -108,12 +120,22 @@ renderTemplate object pairs list = concatMap go list
       let key = fromMaybe "$$" $ lookup keyname vars
       get key dict `mplus` get "$$" dict `mplus` return def
 
-evalTemplate :: FilePath -> StringObject -> [(String, String)] -> String -> Either ParseError String
+-- | Evaluate template
+evalTemplate :: FilePath     -- ^ Template file path (used in error messages)
+             -> StringObject -- 
+             -> Variables
+             -> String       -- ^ Template itself
+             -> Either ParseError String
 evalTemplate path object pairs template = do
   list <- parseTemplate path template
   return $ renderTemplate object pairs list
 
-evalTextFile :: StringObject -> [(String, String)] -> FilePath -> THIS FilePath
+-- | Evaluate template from text file.
+-- Returns path to temporary file with rendered text.
+evalTextFile :: StringObject
+             -> Variables
+             -> FilePath      -- ^ Source template path
+             -> THIS FilePath
 evalTextFile object vars name = do
   (path, template) <- readTemplate name
   result <- liftEitherWith ParsecError $ evalTemplate path object vars template

@@ -56,10 +56,13 @@ loadProjectConfig name vars hosts = do
   pc <- ErrorT $ return $ convertProject path vars hosts object
   return (path, object, pc)
 
+-- | List of hosts used by project
 usedHosts :: ProjectConfig -> [HostConfig]
 usedHosts pc = map (phWhere . snd) (pcPhases pc)
 
-thisHost :: FilePath -> HostConfig
+-- | `this' host (localhost).
+thisHost :: FilePath  -- ^ Base directory
+         -> HostConfig
 thisHost dir =
     HostConfig {
       hcName     = "this",
