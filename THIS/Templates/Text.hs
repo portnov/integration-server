@@ -64,12 +64,12 @@ pKey = do
     _   -> fail $ "Unexpected: " ++ [c]
 
 nested = do
-  list <- pItem True `sepBy1` char '/'
+  list <- pKeyItem `sepBy1` char '/'
   return $ foldr1 (\x y -> x :/: y) list
 
 nest :: Item -> P.Parser Item
 nest item = do
-  next <- (try nested <|> pItem True) <?> "nested template"
+  next <- (try nested <|> pKeyItem) <?> "nested template"
   char '}'
   return $ item :/: next
 

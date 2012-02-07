@@ -65,13 +65,13 @@ phases:
     shutdown: no
 
   count:
-    where: ${config[environment?home]/${host}}
+    where: ${config[environment?home]/host}
     actions: /home/portnov/bin/count ${count?7}
     executor: raw
     parser: all-ok
 
   build:
-    where: ${config[environment?home]/${host}}
+    where: ${config[environment?home]/host}
     actions: [all, clean]
 
     domain: example.com
