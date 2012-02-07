@@ -1,20 +1,20 @@
 title: Test project
 owner: portnov
 
-directory: "${dir[environment]}"
+directory: "${dir[HOSTNAME]}"
 
 dir:
-  home: /home/portnov/src/progs/haskell/integration-server/
-  work: /home/portnov/src/integration-server/
+  # home desktop
+  portnov: /home/portnov/src/progs/haskell/integration-server/
+  # workstation
+  iportnov: /home/portnov/src/integration-server/
   $$: /usr/src/integration-server/
 
 config:
-  home:
+  portnov:
     host: lenovo
-  work:
+  iportnov:
     host: this
-  virtual:
-    host: lenny32
 
 nginx-conf-path:
   production: /etc/nginx/sites-enabled/
@@ -65,13 +65,13 @@ phases:
     shutdown: no
 
   count:
-    where: ${config[environment?home]/host}
+    where: ${config[HOSTNAME?home]/host}
     actions: /home/portnov/bin/count ${count?7}
     executor: raw
     parser: all-ok
 
   build:
-    where: ${config[environment?home]/host}
+    where: ${config[HOSTNAME?home]/host}
     actions: [all, clean]
 
     domain: example.com

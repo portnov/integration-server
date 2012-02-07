@@ -1,6 +1,7 @@
 
 import Control.Monad.Error
 import System.Environment
+import Network.BSD
 import System.Console.GetOpt
 
 import THIS.Types
@@ -46,7 +47,10 @@ main = do
   if Help `elem` opts
     then putStrLn usage
     else do
-         x <- runErrorT $ worker project phase (getVars opts)
+         environment <- getEnvironment
+         hostname <- getHostName
+         let allVars = getVars opts ++ [("HOSTNAME", hostname)] ++ environment
+         x <- runErrorT $ worker project phase allVars
          case x of
            Right _ -> putStrLn "Done."
            Left err -> putStrLn $ "Error: " ++ show err
