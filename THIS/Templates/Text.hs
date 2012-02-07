@@ -2,9 +2,14 @@
 -- | Text templates. Supported substitutions are:
 --
 --  * ${variable}
+--
 --  * ${variable?default-value}
+--
 --  * ${dictionary[key]}
+--
 --  * ${dictionary[key]?default-value}
+--
+--  * ${dictionary[key]\/subkey}
 --
 module THIS.Templates.Text
   ( Template,
