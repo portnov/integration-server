@@ -131,7 +131,7 @@ convertHost (name, object) = do
 convertPhase :: FilePath -> StringObject -> [(String, String)] -> [(String, HostConfig)] -> (String, StringObject) -> Either ErrorMessage (String, Phase)
 convertPhase path project vars hosts (name, object) = do
   pairs <- getPairs object
-  let eval x = liftError ParsecError $ evalTemplate path project (pairs ++ vars) x
+  let eval x = evalTemplate path project (pairs ++ vars) x
   whs <- get "where" object
   whs' <- eval whs
   whr <- case lookup whs' hosts of

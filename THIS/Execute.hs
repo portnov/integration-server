@@ -56,7 +56,7 @@ execute gc projectName phase extVars = do
                          ("path",    ppath),
                          ("phase",   phase)]
                         ++ pcEnvironment pc ++ extVars
-  baseDir <- liftEitherWith ParsecError $
+  baseDir <- liftEither $
                  evalTemplate ppath object baseEnvironment (pcDirectory pc)
   liftIO $ setCurrentDirectory baseDir
   let dbc = gcDatabase gc
@@ -82,7 +82,7 @@ execute gc projectName phase extVars = do
                                 ("phase",   phase)]
                                ++ environment pc ph extVars
         cmdP <- getCommandConnection host
-        hostPath <- lift $ liftEitherWith ParsecError $
+        hostPath <- lift $ liftEither $
                         evalTemplate ppath object phaseEnvironment (hcPath host)
         liftIO $ chdirA cmdP hostPath
         forM_ (phFiles ph) $ \(srchostname, files) -> do
@@ -136,11 +136,11 @@ executeActions dbc cmdP pid host phase ph exePath exe parser object phaseEnviron
             -- Log action start to DB
             arid <- runDB dbc $ startAction pid phase action
             -- Substitute current environment to the action
-            actionRendered <- lift $ liftEitherWith ParsecError $
+            actionRendered <- lift $ liftEither $
                                   evalTemplate exePath object phaseEnvironment action
             -- For commands, add "action" variable to environment
             let commandsEnv = ("action", actionRendered): phaseEnvironment
-            commands <- lift $ liftEitherWith ParsecError $
+            commands <- lift $ liftEither $
                             mapM (evalTemplate exePath object commandsEnv) cmds
             liftIO $ putStrLn $ "Executing: " ++ show commands
             -- Get source to read commands output and return code

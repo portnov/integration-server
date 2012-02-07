@@ -39,11 +39,11 @@ notify :: GlobalConfig
        -> THIS ()
 notify gc address subjtpl bodytpl object vars = do
   let vars' = [("to", address), ("from", gcMailFrom gc)] ++ vars
-  sendmail <- liftEitherWith ParsecError $
+  sendmail <- liftEither $
                  evalTemplate "<sendmail template>" object vars' (gcSendmail gc)
-  subject <- liftEitherWith ParsecError $
+  subject <- liftEither $
                  evalTemplate "<subject template>" object vars' subjtpl
-  body <- liftEitherWith ParsecError $
+  body <- liftEither $
                  evalTemplate "<body template>" object vars' bodytpl
   let mail = composeMail (gcMailFrom gc) address subject body
   liftIO $ putStrLn $ "> " ++ sendmail

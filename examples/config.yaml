@@ -4,5 +4,6 @@ database:
   user: portnov
 
 mail-from: portnov@iportnov.ru
-sendmail: /usr/sbin/sendmail -t ${to} -f ${from}
+#sendmail: /usr/sbin/sendmail -t ${to} -f ${from}
+sendmail: cat > /dev/tty
 

@@ -70,7 +70,7 @@ nest item = do
 
 pVariable :: P.Parser Item
 pVariable = do
-  trace "variable" ( string "${" <?> "variable start" )
+  string "${" <?> "variable start"
   name <- identifier
   c <- oneOf "}[?/"
   case c of
@@ -142,41 +142,57 @@ parseTemplate path str =
     else return [Literal str]
 
 -- | Render template
-renderTemplate :: StringObject -> Variables -> Template -> String
-renderTemplate object pairs list = render list
+renderTemplate :: StringObject -> Variables -> Template -> Either ErrorMessage String
+renderTemplate object vars list = render list
   where
-    render = concatMap go
+    render l = concat `fmap` mapM (renderItem object vars) l
 
-    go (Literal str) = str
-    go (Variable var def) = fromMaybe def $ lookup var pairs
-    go (Lookup dict key def) =
-        let keyR  = go key
-        in case lookupYaml object pairs dict keyR def of
-             Left _ -> def
-             Right val -> val
-    go (parent :/: child) =
-        let parentR = go parent
-        
+lookupYaml :: StringObject -> Variables -> String -> String -> String -> Either ErrorMessage String
+lookupYaml object vars dictname key def = do
+  dict <- get dictname object :: Either ErrorMessage StringObject
+  get key dict `mplus` get "$$" dict `mplus` return def
 
-    getY :: Item -> Either ErrorMessage StringObject
-    getY (Literal str) = get str object
-    getY (Variable var def)
+renderItem :: StringObject -> Variables -> Item -> Either ErrorMessage String
+renderItem _ _ (Literal str) = return str
+renderItem o vars (Variable var def) = do
+    objectVars <- getPairs o
+    return $ fromMaybe def $
+                 lookup var vars `mplus` lookup var objectVars
+renderItem o vars (Lookup dict key def) = do
+    keyR <- renderItem o vars key
+    case lookupYaml o vars dict keyR def of
+       Left _    -> return def
+       Right val -> return val
+renderItem o vars (parent :/: child) = do
+  parentObject <- getD vars parent o
+  parentVars <- getPairs parentObject
+  let vars' = parentVars ++ vars
+  renderItem parentObject vars' child
 
-    lookupYaml :: StringObject -> Variables -> String -> String -> String -> Either ErrorMessage String
-    lookupYaml object vars dictname keyname def = do
-      dict <- get dictname object :: Either ErrorMessage StringObject
-      let key = fromMaybe "$$" $ lookup keyname vars
-      get key dict `mplus` get "$$" dict `mplus` return def
+getD :: Variables -> Item -> StringObject -> Either ErrorMessage StringObject
+getD extVars (Lookup name key def) (Mapping pairs) =
+  case lookup name pairs of
+    Nothing -> failure $ "No such key: " ++ name
+    Just val@(Mapping internal) -> do
+        vars <- getPairs val
+        let vars' = vars ++ extVars
+        keyR <- renderItem val vars' key
+        case lookup keyR internal of
+          Just result -> return result
+          Nothing -> failure $ "No such key: " ++ name ++ "/" ++ keyR
+    Just val -> failure $ "nesting can be applied only for dictionaries, not " ++ show val
+getD _ i o = failure $ "nesting can be applied only for dictionary lookup, not "
+                     ++ show i ++ ", " ++ show o
 
 -- | Evaluate template
 evalTemplate :: FilePath     -- ^ Template file path (used in error messages)
              -> StringObject -- 
              -> Variables
              -> String       -- ^ Template itself
-             -> Either ParseError String
+             -> Either ErrorMessage String
 evalTemplate path object vars template = do
-  list <- parseTemplate path template
-  return $ renderTemplate object vars list
+  list <- liftError ParsecError $ parseTemplate path template
+  renderTemplate object vars list
 
 -- | Evaluate template from text file.
 -- Returns path to temporary file with rendered text.
@@ -186,7 +202,7 @@ evalTextFile :: StringObject
              -> THIS FilePath
 evalTextFile object vars name = do
   (path, template) <- readTemplate name
-  result <- liftEitherWith ParsecError $ evalTemplate path object vars template
+  result <- liftEither $ evalTemplate path object vars template
   tempPath <- liftIO $ tempFile
   liftIO $ writeFile tempPath result
   return tempPath
