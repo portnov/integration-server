@@ -22,13 +22,13 @@ import THIS.Util
 import THIS.Yaml
 import THIS.Templates.Text
 
--- | Load host configuration by name.
-loadHost :: String -> THIS (String, HostConfig)
+-- | Load host configuration from file.
+loadHost :: FilePath -> THIS (String, HostConfig)
 loadHost path = do
   x <- liftIO (decodeFile path :: IO (Either ParseException StringObject))
   case x of
     Left err -> failure (show err)
-    Right object -> liftEither $ convertHost ("", object)
+    Right object -> liftEither $ convertHost path ("", object)
 
 -- | Load common hosts (from \/etc\/this\/hosts and ~\/.config\/this\/hosts).
 loadCommonHosts :: THIS [(String, HostConfig)]
@@ -78,19 +78,22 @@ convertProject :: FilePath
                -> StringObject
                -> Either ErrorMessage ProjectConfig
 convertProject path vars commonHosts object = do
-  dir <- get "directory" object
   title <- getOptional "title" (takeFileName path) object
+  env <- getPairs object
+  let baseEnv = [("project", title),
+                 ("path",    path)]
+                ++ env ++ vars
+  dir   <- evalTemplate path object baseEnv =<< get "directory" object
   owner <- getOptional "owner" "admin" object
-  hosts <- mapM convertHost =<< getOptional "hosts" [] object
+  hosts <- mapM (convertHost path) =<< getOptional "hosts" [] object
   let allHosts = [("this", thisHost dir)] ++ commonHosts ++ hosts
   phases <- mapM (convertPhase path object vars allHosts) =<< get "phases" object
-  env <- getPairs object
   return $ ProjectConfig {
-             pcDirectory = dir,
-             pcTitle = title,
-             pcOwner = owner,
-             pcHosts = allHosts,
-             pcPhases = phases,
+             pcDirectory   = dir,
+             pcTitle       = title,
+             pcOwner       = owner,
+             pcHosts       = allHosts,
+             pcPhases      = phases,
              pcEnvironment = env }
 
 convertVar :: (String, StringObject) -> Either ErrorMessage (String, String)
@@ -98,37 +101,62 @@ convertVar (name, object) = do
   val <- getString object
   return (name, val)
 
-convertHost :: (String, StringObject) -> Either ErrorMessage (String, HostConfig)
-convertHost (name, object) = do
+convertHost :: FilePath -> (String, StringObject) -> Either ErrorMessage (String, HostConfig)
+convertHost path (name, object) = do
+  vars <- getPairs object
+  let eval x = evalTemplate path object vars x
   ht <- getOptional "type" "host" object
   hostname <- get "host" object
+  -- Path templates will be evaluated at execution, using phase environment
   path <- get "path" object
   mbvm <- case ht of
             "host" -> return Nothing
             "vm" -> Just <$> (VMConfig
-                      <$> getOptional "hypervisor" "qemu:///system" object
+                      <$> (eval =<< getOptional "hypervisor" "qemu:///system" object)
                       <*> getOptional "empty" False object
-                      <*> get "template" object
+                      <*> (eval =<< get "template" object)
                       <*> getOptional "name" hostname object
-                      <*> getOptional "snapshot" "" object
+                      <*> (eval =<< getOptional "snapshot" "" object)
                       <*> getOptional "startup-time" 10 object )
             _ -> failure $ "Unknown host type: " ++ ht
-  generic <- getOptional "protocol" "libssh2" object
-  cmdP    <- getOptional "command-protocol" generic object
-  sendP   <- getOptional "send-protocol"    cmdP    object
-  recvP   <- getOptional "receive-protocol" cmdP    object
-  params <- getPairs object
+  generic <- getOptional "protocol"         "libssh2" object
+  cmdP    <- getOptional "command-protocol" generic   object
+  sendP   <- getOptional "send-protocol"    cmdP      object
+  recvP   <- getOptional "receive-protocol" cmdP      object
+  ci      <- loadConnectionInfo path object vars
   return (name, HostConfig {
-             hcName = if null name then hostname else name,
-             hcHostname = hostname,
-             hcPath = path,
-             hcVM = mbvm,
-             hcParams = params,
+             hcName             = if null name
+                                    then hostname
+                                    else name,
+             hcHostname         = hostname,
+             hcPath             = path,
+             hcVM               = mbvm,
+             hcParams           = vars,
              hcCommandsProtocol = cmdP,
-             hcSendProtocol = sendP,
-             hcReceiveProtocol = recvP } )
+             hcSendProtocol     = sendP,
+             hcReceiveProtocol  = recvP,
+             hcConnectionInfo   = ci } )
 
-convertPhase :: FilePath -> StringObject -> [(String, String)] -> [(String, HostConfig)] -> (String, StringObject) -> Either ErrorMessage (String, Phase)
+loadConnectionInfo :: FilePath -> StringObject -> Variables -> Either ErrorMessage ConnectionInfo
+loadConnectionInfo path object vars =
+  let  eval x = evalTemplate path object vars x
+       kh   = "/etc/this/ssh/known_hosts"
+       pub  = "/etc/this/ssh/id_rsa.pub"
+       priv = "/etc/this/ssh/id_rsa"
+  in ConnectionInfo
+      <$> get "host"    object
+      <*> getOptional "port" 22 object
+      <*> (eval =<< getOptional "login"       "this" object)
+      <*> (eval =<< getOptional "known-hosts" kh     object)
+      <*> (eval =<< getOptional "public-key"  pub    object)
+      <*> (eval =<< getOptional "private-key" priv   object)
+
+convertPhase :: FilePath               -- ^ Path to project file
+             -> StringObject           -- ^ Project object
+             -> Variables              --
+             -> [(String, HostConfig)]
+             -> (String, StringObject)
+             -> Either ErrorMessage (String, Phase)
 convertPhase path project vars hosts (name, object) = do
   pairs <- getPairs object
   let eval x = evalTemplate path project (pairs ++ vars) x

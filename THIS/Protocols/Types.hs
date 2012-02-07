@@ -12,18 +12,6 @@ import System.Directory
 import THIS.Types
 import THIS.Util
 
-data ConnectionInfo = ConnectionInfo {
-  cHost :: String,
-  cPort :: Int,
-  cUsername :: String,
-  cKnownHosts :: FilePath,
-  cPublicKey :: FilePath,
-  cPrivateKey :: FilePath }
-  deriving (Eq, Data, Typeable)
-
-instance Show ConnectionInfo where
-  show cfg = cUsername cfg ++ "@" ++ cHost cfg ++ ":" ++ show (cPort cfg)
-
 class (Typeable p) => Protocol p where
   initializeProtocol :: p -> IO ()
   deinitializeProtocol :: p -> IO ()

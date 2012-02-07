@@ -20,36 +20,35 @@ nginx-conf-path:
   production: /etc/nginx/sites-enabled/
   $$: .
 
+keys: &keys
+    known-hosts: /home/portnov/.ssh/known_hosts
+    public-key:  /home/portnov/.ssh/id_rsa.pub
+    private-key: /home/portnov/.ssh/id_rsa
+
 hosts:
   local:
     host: localhost
     port: 22
     login: portnov
     path: /home/portnov/temp/test/
-    known-hosts: /home/portnov/.ssh/known_hosts
-    public-key:  /home/portnov/.ssh/id_rsa.pub
-    private-key: /home/portnov/.ssh/id_rsa
+    <<: *keys
 
   lenovo:
     host: lenovo.local
     port: 2345
     path: /home/this/temp/test/
-    known-hosts: /home/portnov/.ssh/known_hosts
-    public-key:  /home/portnov/.ssh/id_rsa.pub
-    private-key: /home/portnov/.ssh/id_rsa
+    <<: *keys
 
   lenny32:
     type: vm
     host: debian32
     login: portnov
     path: /home/portnov/
-    known-hosts: /home/portnov/.ssh/known_hosts
-    public-key:  /home/portnov/.ssh/id_rsa.pub
-    private-key: /home/portnov/.ssh/id_rsa
     empty: false
     startup-time: 20
     template: template.xml
     name: Debian32
+    <<: *keys
 
 phases:
   test:

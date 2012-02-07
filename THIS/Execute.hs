@@ -52,19 +52,13 @@ execute :: GlobalConfig
 execute gc projectName phase extVars = do
   commonHosts <- loadCommonHosts
   (ppath, object, pc) <- loadProjectConfig projectName extVars commonHosts
-  let baseEnvironment = [("project", pcTitle pc),
-                         ("path",    ppath),
-                         ("phase",   phase)]
-                        ++ pcEnvironment pc ++ extVars
-  baseDir <- liftEither $
-                 evalTemplate ppath object baseEnvironment (pcDirectory pc)
-  liftIO $ setCurrentDirectory baseDir
+  liftIO $ setCurrentDirectory (pcDirectory pc)
   let dbc = gcDatabase gc
   pid <- runDB dbc $ checkProject ppath projectName pc
   case lookup phase (pcPhases pc) of
     Nothing -> lift $ putStrLn $ "No such phase: " ++ phase
     Just ph -> do
-      let allHosts = [("this", thisHost baseDir)]
+      let allHosts = [("this", thisHost (pcDirectory pc))]
                      ++ [(hcName h, h) | h <- usedHosts pc]
                      ++ commonHosts
       manageConnections (map snd allHosts) $ do

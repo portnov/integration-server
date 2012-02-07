@@ -32,19 +32,6 @@ lookupForce key pairs =
     Nothing -> failure $ "Key not found: " ++ key
     Just v  -> return v
 
-loadConnectionInfo :: Variables -> Either ErrorMessage ConnectionInfo
-loadConnectionInfo pairs = ConnectionInfo
-    <$> lookupForce "host" pairs
-    <*> (readInt $ lookupDefault "port" "22" pairs)
-    <*> (Right $ lookupDefault "login" "this" pairs)
-    <*> (Right $ lookupDefault "known-hosts" kh pairs)
-    <*> (Right $ lookupDefault "public-key" pub pairs)
-    <*> (Right $ lookupDefault "private-key" priv pairs)
-  where
-    kh   = "/etc/this/ssh/known_hosts"
-    pub  = "/etc/this/ssh/id_rsa.pub"
-    priv = "/etc/this/ssh/id_rsa"
-
 manageConnections :: (MonadIO m, Failure ErrorMessage m) => [HostConfig] -> Managed m a -> m a
 manageConnections hosts fn = do
   let manager = Connections {

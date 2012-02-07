@@ -4,6 +4,7 @@ module THIS.Types where
 
 import Control.Monad.Error as E
 import Control.Failure
+import Data.Generics
 import Data.Object.Yaml
 import qualified Text.Parsec as P
 
@@ -61,6 +62,7 @@ data HostConfig = HostConfig {
      hcCommandsProtocol :: String,
      hcSendProtocol :: String,
      hcReceiveProtocol :: String,
+     hcConnectionInfo :: ConnectionInfo,
      hcParams :: Variables }
   deriving (Eq, Show)
 
@@ -72,6 +74,18 @@ data VMConfig = VMConfig {
       vmSnapshot :: String,
       vmStartupTime :: Int }
   deriving (Eq, Show)
+
+data ConnectionInfo = ConnectionInfo {
+  cHost :: String,
+  cPort :: Int,
+  cUsername :: String,
+  cKnownHosts :: FilePath,
+  cPublicKey :: FilePath,
+  cPrivateKey :: FilePath }
+  deriving (Eq, Data, Typeable)
+
+instance Show ConnectionInfo where
+  show cfg = cUsername cfg ++ "@" ++ cHost cfg ++ ":" ++ show (cPort cfg)
 
 data Phase = Phase {
     phWhere :: HostConfig,
