@@ -8,7 +8,6 @@ module THIS.Protocols.Manager
    getTransferConnections
   ) where
 
-import Control.Applicative
 import Control.Monad
 import Control.Monad.Trans
 import Control.Monad.State as St
@@ -18,8 +17,6 @@ import Data.Maybe
 import qualified Data.Map as M
 
 import THIS.Types
-import THIS.Util
-import THIS.Yaml
 import THIS.Protocols.Types
 import THIS.Protocols.Parse
 
@@ -56,7 +53,7 @@ getCommandConnection host = do
     Just p -> return p
     Nothing -> do
                let proto = hcCommandsProtocol host
-               ci <- forceEither $ loadConnectionInfo (hcParams host)
+                   ci    = hcConnectionInfo host
                new <- liftIO $ parseCommandProtocol proto ci
                let m = M.insert (hcHostname host) new (commandConnections prs)
                St.put $ prs { commandConnections = m }
@@ -69,7 +66,7 @@ getSendConnection host = do
     Just p -> return p
     Nothing -> do
                let proto = hcSendProtocol host
-               ci <- forceEither $ loadConnectionInfo (hcParams host)
+                   ci    = hcConnectionInfo host
                new <- liftIO $ parseSendProtocol proto ci
                let m = M.insert (hcHostname host) new (sendConnections prs)
                St.put $ prs { sendConnections = m }
@@ -82,7 +79,7 @@ getReceiveConnection host = do
     Just p -> return p
     Nothing -> do
                let proto = hcReceiveProtocol host
-               ci <- forceEither $ loadConnectionInfo (hcParams host)
+                   ci    = hcConnectionInfo host
                new <- liftIO $ parseReceiveProtocol proto ci
                let m = M.insert (hcHostname host) new (receiveConnections prs)
                St.put $ prs { receiveConnections = m }

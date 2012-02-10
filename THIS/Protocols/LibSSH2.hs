@@ -17,6 +17,7 @@ import Network.SSH.Client.LibSSH2.Foreign
 import Network.SSH.Client.LibSSH2
 import Network.SSH.Client.LibSSH2.Conduit
 
+import THIS.Types
 import THIS.Protocols.Types
 
 data LibSSH2 = LibSSH2 Session (TMVar FilePath)

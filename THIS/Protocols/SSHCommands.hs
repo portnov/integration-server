@@ -14,6 +14,7 @@ import Text.Printf
 import Data.Conduit
 import Data.Generics
 
+import THIS.Types
 import THIS.Util
 import THIS.Protocols.Types
 

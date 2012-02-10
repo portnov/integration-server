@@ -2,6 +2,7 @@ module THIS.Protocols.Parse where
 
 import Control.Applicative
 
+import THIS.Types
 import THIS.Protocols.Types
 import THIS.Protocols.Local
 import THIS.Protocols.LibSSH2

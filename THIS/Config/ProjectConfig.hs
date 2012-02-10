@@ -4,6 +4,7 @@ module THIS.Config.ProjectConfig
   (loadProjectConfig,
    loadHost,
    loadCommonHosts,
+   loadConnectionInfo,
    usedHosts,
    thisHost
   ) where
@@ -58,6 +59,15 @@ loadProjectConfig name vars hosts = do
 usedHosts :: ProjectConfig -> [HostConfig]
 usedHosts pc = map (phWhere . snd) (pcPhases pc)
 
+defaultConnectionInfo :: ConnectionInfo
+defaultConnectionInfo = ConnectionInfo {
+  cHost = "localhost",
+  cPort = 22,
+  cUsername   = "this",
+  cKnownHosts = "",
+  cPublicKey  = "",
+  cPrivateKey = "" }
+
 -- | `this' host (localhost).
 thisHost :: FilePath  -- ^ Base directory
          -> HostConfig
@@ -70,6 +80,7 @@ thisHost dir =
       hcCommandsProtocol = "local",
       hcSendProtocol     = "local",
       hcReceiveProtocol  = "local",
+      hcConnectionInfo   = defaultConnectionInfo,
       hcParams   = [("host", "localhost")] }
 
 convertProject :: FilePath
