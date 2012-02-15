@@ -1,6 +1,12 @@
 $$:
   commands:
     - cd ${base?~/src}/
-    - git clone ${url} 2>&1
-    - cd $$(basename ${url} .git)/${subdir}
+    - SRC=$$(basename ${url} .git)/${subdir}
+    - |
+      if [ -d $SRC ]
+        then cd $SRC
+             git pull
+        else git clone ${url} 2>&1
+             cd $SRC
+      fi
     - cabal install ${flags} 2>&1

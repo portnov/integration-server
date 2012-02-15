@@ -81,7 +81,8 @@ data ConnectionInfo = ConnectionInfo {
   cUsername :: String,
   cKnownHosts :: FilePath,
   cPublicKey :: FilePath,
-  cPrivateKey :: FilePath }
+  cPrivateKey :: FilePath,
+  cEnvironment :: Variables }
   deriving (Eq, Data, Typeable)
 
 instance Show ConnectionInfo where

@@ -34,14 +34,14 @@ import THIS.Protocols.SSHCommands
 initializeProtocols :: IO ()
 initializeProtocols = do
   initializeProtocol Local
-  initializeProtocol (LibSSH2 undefined undefined)
+  initializeProtocol (LibSSH2 undefined undefined [])
   initializeProtocol (SSHCommands undefined)
 
 -- | Deinitialize all protocols
 deinitializeProtocols :: IO ()
 deinitializeProtocols = do
   deinitializeProtocol Local
-  deinitializeProtocol (LibSSH2 undefined undefined)
+  deinitializeProtocol (LibSSH2 undefined undefined [])
   deinitializeProtocol (SSHCommands undefined)
 
 -- | Disconnect any connection

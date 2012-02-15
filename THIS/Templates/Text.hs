@@ -49,7 +49,7 @@ identifier :: P.Parser String
 identifier = (many1 $ noneOf "[]{}$:?/ \t\n\r") <?> "identifier"
 
 defaultValue :: P.Parser String
-defaultValue = (many $ noneOf "/}]") <?> "variable default value"
+defaultValue = (many $ noneOf "}]") <?> "variable default value"
 
 pKey :: P.Parser Item
 pKey = do

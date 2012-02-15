@@ -66,7 +66,8 @@ defaultConnectionInfo = ConnectionInfo {
   cUsername   = "this",
   cKnownHosts = "",
   cPublicKey  = "",
-  cPrivateKey = "" }
+  cPrivateKey = "",
+  cEnvironment = [] }
 
 -- | `this' host (localhost).
 thisHost :: FilePath  -- ^ Base directory
@@ -161,6 +162,7 @@ loadConnectionInfo path object vars =
       <*> (eval =<< getOptional "known-hosts" kh     object)
       <*> (eval =<< getOptional "public-key"  pub    object)
       <*> (eval =<< getOptional "private-key" priv   object)
+      <*> (pure vars)
 
 convertPhase :: FilePath               -- ^ Path to project file
              -> StringObject           -- ^ Project object

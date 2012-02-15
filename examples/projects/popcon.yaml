@@ -3,30 +3,45 @@ owner: portnov
 
 directory: /home/portnov/src/progs/haskell/yesod/popcon-server/
 
+keys: &keys
+    known-hosts: /home/portnov/.ssh/known_hosts
+    public-key:  /home/portnov/.ssh/id_rsa.pub
+    private-key: /home/portnov/.ssh/id_rsa
+
 hosts:
   lenny32:
     type: vm
     host: debian32
     login: portnov
     path: /home/portnov/src/popcon-server/
-    known-hosts: /home/portnov/.ssh/known_hosts
-    public-key:  /home/portnov/.ssh/id_rsa.pub
-    private-key: /home/portnov/.ssh/id_rsa
     empty: false
     startup-time: 15
     name: Debian32
     template: template.xml
+    <<: *keys
+
+  debian:
+    host: debian
+    login: portnov
+    type: vm
+    empty: false
+    template: template.xml
+    name: Debian
+    snapshot: /home/portnov/vms/debian.snapshot
+    path: /home/portnov/popcon-server/
+    PATH: ~/.cabal/bin:$PATH
+    <<: *keys
 
 phases:
   prepare:
-    where: lenny32
+    where: debian
     actions: cabal update
     executor: raw
     parser: all-ok
     shutdown: no
 
   yesod-goodies:
-    where: lenny32
+    where: debian
     executor: cabal-install-from-git
     url: git://github.com/pbrisbin/yesod-goodies.git
     base: /home/portnov/src/
@@ -35,7 +50,7 @@ phases:
     shutdown: no
 
   persistent-hssqlppp:
-    where: lenny32
+    where: debian
     executor: cabal-install-from-git
     url: git://home.iportnov.ru/persistent-hssqlppp.git
     base: /home/portnov/src/
@@ -43,7 +58,7 @@ phases:
     shutdown: no
 
   build:
-    where: lenny32
+    where: debian
 
     actions: [""]
     executor: cabal-dev-install
