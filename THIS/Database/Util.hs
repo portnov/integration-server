@@ -18,7 +18,7 @@ runDB :: (MonadIO m) => DBConfig -> DB a -> m a
 runDB dbc db = do
   liftIO $ withPostgresqlConn (toBS $ show dbc) $ runSqlConn $ db
 
-check :: (Show v, PersistEntity v) => v -> DB (Key SqlPersist v)
+check :: (Show v, PersistEntity v, PersistEntityBackend v ~ SqlPersist) => v -> DB (Key SqlPersist v)
 check v = do
   r <- insertBy v
   case r of
